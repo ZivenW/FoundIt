@@ -455,3 +455,4 @@ window.applyFilters      = applyFilters;
 window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;
+
