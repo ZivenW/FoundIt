@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, updateProfile
+  signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -348,6 +348,29 @@ window.doRegister = async function() {
     errEl.textContent = e.code === "auth/email-already-in-use"
       ? "Email sudah digunakan."
       : "Registrasi gagal: " + e.message;
+    errEl.style.display = "block";
+  }
+};
+
+window.doForgotPassword = async function() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const errEl = document.getElementById("authError");
+  errEl.style.display = "none";
+
+  if (!email) {
+    errEl.textContent = "Masukkan email kamu dulu.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    window.closeAuthModalDirect();
+    window.showToast("Link reset password sudah dikirim ke email kamu! 📧", "success");
+  } catch (e) {
+    errEl.textContent = e.code === "auth/user-not-found"
+      ? "Email tidak terdaftar."
+      : "Gagal mengirim email reset.";
     errEl.style.display = "block";
   }
 };

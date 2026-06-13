@@ -90,7 +90,7 @@ function renderGrid(id, items) {
     return `<div class="item-card" data-id="${item.id}" data-category="${item.category}" 
     data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}" 
     onclick="openModal('${item.id}')">
-      <div class="item-thumb" style="background:${getCatColor(item.category)}">${item.emoji}</div>
+      <div class="item-thumb" style="background:${getCatColor(item.category)};overflow:hidden;">${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : item.emoji}</div>
       <div class="item-body">
         <div class="item-name">${item.name}</div>
         <div class="item-loc">📍 ${item.location}</div>
@@ -238,7 +238,11 @@ function openModal(id) {
   window._currentModalItem = item;
   const isLost = item.status.toLowerCase() === 'lost';
   document.getElementById('modalTitle').textContent  = item.name;
-  document.getElementById('modalThumb').textContent  = item.emoji;
+  if (item.imageUrl) {
+    document.getElementById('modalThumb').innerHTML = `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+  } else {
+    document.getElementById('modalThumb').textContent = item.emoji;
+  }
   document.getElementById('modalThumb').style.background = getCatColor(item.category);
   document.getElementById('modalBadge').innerHTML    = `<span class="badge badge-${isLost ? 'lost' : 'returned'}">${isLost ? '🔴 Unclaimed' : '✅ Claimed'}</span>`;
   document.getElementById('modalLoc').textContent    = item.location;
@@ -488,6 +492,8 @@ function closeAuthModalDirect() {
 function switchAuthTab(tab) {
   document.getElementById("formLogin").style.display    = tab === "login"    ? "block" : "none";
   document.getElementById("formRegister").style.display = tab === "register" ? "block" : "none";
+  const forgotEl = document.getElementById("formForgot");
+  if (forgotEl) forgotEl.style.display = tab === "forgot" ? "block" : "none";
   document.getElementById("tabLogin").style.background    = tab === "login"    ? "var(--primary)" : "var(--surface)";
   document.getElementById("tabLogin").style.color         = tab === "login"    ? "#fff"           : "var(--text2)";
   document.getElementById("tabRegister").style.background = tab === "register" ? "var(--primary)" : "var(--surface)";
@@ -526,6 +532,8 @@ function openClaimForm() {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+  const tnc = document.getElementById("claimTnC");
+  if (tnc) tnc.checked = false;
 
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
@@ -544,6 +552,11 @@ function closeClaimModalDirect() {
 
 function submitClaimForm() {
   if (!_claimTarget) return;
+  const tnc = document.getElementById("claimTnC");
+  if (!tnc || !tnc.checked) {
+    window.showToast("Centang persetujuan syarat & ketentuan dulu! ☝️", "error");
+    return;
+  }
   window.doSubmitClaim(
     _claimTarget.id,
     _claimTarget.firestoreId || _claimTarget.id.replace("fb_", ""),
