@@ -87,7 +87,8 @@ function renderGrid(id, items) {
   }
   el.innerHTML = items.map(item => {
     const isLost = item.status.toLowerCase() === 'lost';
-    return `<div class="item-card" data-id="${item.id}" data-category="${item.category}" data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}" onclick="openModal(${item.id})">
+    return `<div class="item-card" data-id="${item.id}" data-category="${item.category}" 
+    data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}">
       <div class="item-thumb" style="background:${getCatColor(item.category)}">${item.emoji}</div>
       <div class="item-body">
         <div class="item-name">${item.name}</div>
@@ -98,6 +99,14 @@ function renderGrid(id, items) {
     </div>`;
   }).join('');
 }
+
+// ===== EVENT DELEGATION FOR GRID CLICKS =====
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.item-card');
+  if (!card) return;
+  const id = card.getAttribute('data-id');
+  if (id) openModal(id);
+});
 
 // ===== HOME STATS =====
 function initStats() {
@@ -127,7 +136,7 @@ function renderSidebarRecent() {
   const el = document.getElementById('sidebarRecent');
   if (!el) return;
   el.innerHTML = allItems.slice(0, 4).map(item => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openModal(${item.id})">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openModal('${item.id}')">
       <span style="font-size:22px;">${item.emoji}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
@@ -223,7 +232,7 @@ function sortItems() {
 
 // ===== MODAL =====
 function openModal(id) {
-  const item = allItems.find(i => i.id === id);
+  const item = allItems.find(i => String(i.id) === String(id));
   if (!item) return;
   const isLost = item.status.toLowerCase() === 'lost';
   document.getElementById('modalTitle').textContent  = item.name;
@@ -397,7 +406,7 @@ function initNavSearch() {
     } else {
       dropdown.innerHTML = results.map(item => {
         const isLost = item.status.toLowerCase() === 'lost';
-        return `<div class="sd-item" onclick="onNavSearchPick(${item.id})">
+        return `<div class="sd-item" onclick="onNavSearchPick('${item.id}')">
           <div class="sd-emoji">${item.emoji}</div>
           <div class="sd-info">
             <div class="sd-name">${item.name}</div>
@@ -456,3 +465,4 @@ window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;
 
+document.querySelector('.item-card')?.getAttribute('onclick')
