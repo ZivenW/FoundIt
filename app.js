@@ -87,13 +87,10 @@ function renderGrid(id, items) {
   }
   el.innerHTML = items.map(item => {
     const isLost = item.status.toLowerCase() === 'lost';
-    const thumbInner = item.imageUrl
-      ? `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`
-      : item.emoji;
     return `<div class="item-card" data-id="${item.id}" data-category="${item.category}" 
     data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}" 
-    style="cursor:pointer;">
-      <div class="item-thumb" style="background:${getCatColor(item.category)};overflow:hidden;">${thumbInner}</div>
+    onclick="openModal('${item.id}')">
+      <div class="item-thumb" style="background:${getCatColor(item.category)}">${item.emoji}</div>
       <div class="item-body">
         <div class="item-name">${item.name}</div>
         <div class="item-loc">📍 ${item.location}</div>
@@ -103,14 +100,6 @@ function renderGrid(id, items) {
     </div>`;
   }).join('');
 }
-
-// ===== CARD CLICK — event delegation =====
-document.addEventListener('click', function(e) {
-  const card = e.target.closest('.item-card');
-  if (!card) return;
-  const id = card.dataset.id;
-  if (id) openModal(id);
-});
 
 // ===== HOME STATS =====
 function initStats() {
@@ -153,6 +142,14 @@ function renderSidebarRecent() {
 
 // ===== PAGE NAVIGATION =====
 function showPage(name) {
+  if (name === 'myreports' && typeof window.loadMyReports === 'function') {
+    setTimeout(window.loadMyReports, 100);
+  }
+  if (name === 'report' && !window._currentUser) {
+    showToast("Login dulu untuk melaporkan barang! 🔐", "error");
+    setTimeout(() => toggleAuthModal(), 600);
+    return;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = document.getElementById('page-' + name);
   if (el) el.classList.add('active');
@@ -238,13 +235,10 @@ function sortItems() {
 function openModal(id) {
   const item = allItems.find(i => String(i.id) === String(id));
   if (!item) return;
+  window._currentModalItem = item;
   const isLost = item.status.toLowerCase() === 'lost';
   document.getElementById('modalTitle').textContent  = item.name;
-  if (item.imageUrl) {
-    document.getElementById('modalThumb').innerHTML = '<img src="' + item.imageUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">';
-  } else {
-    document.getElementById('modalThumb').textContent = item.emoji;
-  }
+  document.getElementById('modalThumb').textContent  = item.emoji;
   document.getElementById('modalThumb').style.background = getCatColor(item.category);
   document.getElementById('modalBadge').innerHTML    = `<span class="badge badge-${isLost ? 'lost' : 'returned'}">${isLost ? '🔴 Unclaimed' : '✅ Claimed'}</span>`;
   document.getElementById('modalLoc').textContent    = item.location;
@@ -467,6 +461,98 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModalDirect();
 });
 
+
+// ===== AUTH MODAL =====
+function toggleAuthModal() {
+  const modal = document.getElementById("authModal");
+  if (!modal) return;
+  if (modal.classList.contains("open")) {
+    closeAuthModalDirect();
+  } else {
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function closeAuthModal(e) {
+  if (e.target === document.getElementById("authModal")) closeAuthModalDirect();
+}
+
+function closeAuthModalDirect() {
+  const modal = document.getElementById("authModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function switchAuthTab(tab) {
+  document.getElementById("formLogin").style.display    = tab === "login"    ? "block" : "none";
+  document.getElementById("formRegister").style.display = tab === "register" ? "block" : "none";
+  document.getElementById("tabLogin").style.background    = tab === "login"    ? "var(--primary)" : "var(--surface)";
+  document.getElementById("tabLogin").style.color         = tab === "login"    ? "#fff"           : "var(--text2)";
+  document.getElementById("tabRegister").style.background = tab === "register" ? "var(--primary)" : "var(--surface)";
+  document.getElementById("tabRegister").style.color      = tab === "register" ? "#fff"           : "var(--text2)";
+  document.getElementById("authError").style.display = "none";
+}
+
+// ===== CLAIM MODAL =====
+let _claimTarget = null;
+
+function openClaimForm() {
+  if (!window._currentUser) {
+    closeModalDirect();
+    showToast("Login dulu untuk mengklaim barang! 🔐", "error");
+    setTimeout(() => toggleAuthModal(), 600);
+    return;
+  }
+  const item = window._currentModalItem;
+  if (!item) return;
+
+  _claimTarget = item;
+  const modal   = document.getElementById("claimModal");
+  const nameEl  = document.getElementById("claimItemName");
+  if (nameEl) nameEl.textContent = "📦 " + item.name + " · " + item.location;
+
+  // Pre-fill if logged in
+  const user = window._currentUser;
+  if (user) {
+    const nameInput = document.getElementById("claimName");
+    if (nameInput && !nameInput.value) nameInput.value = user.displayName || "";
+    const emailInput = document.getElementById("claimEmail");
+    if (emailInput && !emailInput.value) emailInput.value = user.email || "";
+  }
+
+  ["claimWA","claimProof"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeClaimModal(e) {
+  if (e.target === document.getElementById("claimModal")) closeClaimModalDirect();
+}
+
+function closeClaimModalDirect() {
+  const modal = document.getElementById("claimModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function submitClaimForm() {
+  if (!_claimTarget) return;
+  window.doSubmitClaim(
+    _claimTarget.id,
+    _claimTarget.firestoreId || _claimTarget.id.replace("fb_", ""),
+    _claimTarget.reporterPhone,
+    _claimTarget.reporterName,
+    _claimTarget.name
+  );
+}
+
 // ===== EXPOSE FUNCTIONS TO WINDOW (needed by firebase.js module) =====
 window.renderGrid        = renderGrid;
 window.initStats         = initStats;
@@ -476,3 +562,11 @@ window.applyFilters      = applyFilters;
 window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;
+window.toggleAuthModal   = toggleAuthModal;
+window.closeAuthModal    = closeAuthModal;
+window.closeAuthModalDirect = closeAuthModalDirect;
+window.switchAuthTab     = switchAuthTab;
+window.openClaimForm     = openClaimForm;
+window.closeClaimModal   = closeClaimModal;
+window.closeClaimModalDirect = closeClaimModalDirect;
+window.submitClaimForm   = submitClaimForm;

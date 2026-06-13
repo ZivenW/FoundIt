@@ -23,7 +23,8 @@
     <button class="nav-btn active" id="nav-home"   onclick="showPage('home')">🏠 Home</button>
     <button class="nav-btn"        id="nav-search" onclick="showPage('search')">🔎 Search</button>
     <button class="nav-btn"        id="nav-report" onclick="showPage('report')">📋 Report Found</button>
-    <button class="nav-btn"        id="nav-stats"  onclick="showPage('stats')">📊 Statistics</button>
+    <button class="nav-btn"        id="nav-stats"      onclick="showPage('stats')">📊 Statistics</button>
+    <button class="nav-btn"        id="nav-myreports"  onclick="showPage('myreports')" style="display:none;">📦 My Reports</button>
   </div>
 
   <div class="nav-right">
@@ -31,6 +32,10 @@
       <span class="s-icon">🔍</span>
       <input type="text" id="navSearchInput" placeholder="Quick search item..." autocomplete="off">
       <div id="searchDropdown"></div>
+    </div>
+    <div id="authNavArea" style="display:flex;align-items:center;gap:8px;">
+      <span id="authUserName" style="font-size:13px;font-weight:600;color:var(--text);display:none;"></span>
+      <button class="icon-btn" id="authNavBtn" onclick="toggleAuthModal()" title="Login" style="font-size:13px;padding:6px 18px;border-radius:8px;background:var(--primary);color:#fff;font-weight:600;min-width:80px;">Login</button>
     </div>
     <button class="icon-btn" onclick="toggleDark()" id="darkToggle" title="Toggle dark mode">🌙</button>
     <button class="icon-btn" onclick="showPage('report')" title="Report item" style="font-size:15px;">
@@ -45,7 +50,8 @@
   <button class="nav-btn active" id="mnav-home"   onclick="showPage('home')">🏠</button>
   <button class="nav-btn"        id="mnav-search" onclick="showPage('search')">🔎</button>
   <button class="nav-btn"        id="mnav-report" onclick="showPage('report')">📋</button>
-  <button class="nav-btn"        id="mnav-stats"  onclick="showPage('stats')">📊</button>
+  <button class="nav-btn"        id="mnav-stats"      onclick="showPage('stats')">📊</button>
+  <button class="nav-btn"        id="mnav-myreports"  onclick="showPage('myreports')" style="display:none;">📦</button>
 </nav>
 
 <!-- ===================== HOME PAGE ===================== -->
@@ -386,7 +392,110 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.571a.75.75 0 00.918.919l5.8-1.517A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.92 0-3.722-.51-5.27-1.402l-.378-.22-3.923 1.027 1.003-3.81-.245-.393A10 10 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
           Contact via WA
         </a>
-        <button class="btn-claim" onclick="claimItem()">🙋 This Is Mine — Claim It</button>
+        <button class="btn-claim" onclick="openClaimForm()">🙋 This Is Mine — Claim It</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== MY REPORTS PAGE ===================== -->
+<div id="page-myreports" class="page">
+  <div class="report-page" style="max-width:900px;margin:0 auto;padding:24px 16px;">
+    <div class="sec-head" style="margin-bottom:20px;">
+      <div>
+        <div class="sec-title">📦 My Reports</div>
+        <div class="sec-sub">Items you've reported and their claim requests</div>
+      </div>
+    </div>
+    <div id="myReportsList" style="display:flex;flex-direction:column;gap:16px;">
+      <div style="text-align:center;padding:40px;color:var(--text3);">Loading your reports...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== AUTH MODAL ===================== -->
+<div class="modal-overlay" id="authModal" onclick="closeAuthModal(event)">
+  <div class="modal" id="authModalContent" style="max-width:420px;padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--border);">
+      <button id="tabLogin" onclick="switchAuthTab('login')" style="flex:1;padding:16px;background:var(--primary);color:#fff;border:none;font-weight:700;font-size:14px;cursor:pointer;border-radius:0;">Login</button>
+      <button id="tabRegister" onclick="switchAuthTab('register')" style="flex:1;padding:16px;background:var(--surface);color:var(--text2);border:none;font-weight:600;font-size:14px;cursor:pointer;border-radius:0;">Register</button>
+    </div>
+    <div style="padding:24px;">
+      <div id="authError" style="display:none;background:#FEE2E2;color:#DC2626;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
+      
+      <!-- LOGIN FORM -->
+      <div id="formLogin">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Email</label>
+          <input class="rfield" id="loginEmail" type="email" placeholder="email@binus.ac.id" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
+          <input class="rfield" id="loginPassword" type="password" placeholder="Password" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <button onclick="doLogin()" style="width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Login</button>
+        <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text3);">Belum punya akun? <b style="color:var(--primary);cursor:pointer;" onclick="switchAuthTab('register')">Register</b></p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="formRegister" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Nama Lengkap</label>
+          <input class="rfield" id="regName" type="text" placeholder="Nama kamu" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Email</label>
+          <input class="rfield" id="regEmail" type="email" placeholder="email@binus.ac.id" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">No. WhatsApp</label>
+          <input class="rfield" id="regPhone" type="text" placeholder="628xxx" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
+          <input class="rfield" id="regPassword" type="password" placeholder="Min. 6 karakter" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <button onclick="doRegister()" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Daftar Sekarang</button>
+        <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text3);">Sudah punya akun? <b style="color:var(--primary);cursor:pointer;" onclick="switchAuthTab('login')">Login</b></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CLAIM FORM MODAL ===================== -->
+<div class="modal-overlay" id="claimModal" onclick="closeClaimModal(event)">
+  <div class="modal" id="claimModalContent" style="max-width:460px;">
+    <div class="modal-body" style="padding:24px;">
+      <div class="modal-header" style="margin-bottom:20px;">
+        <div>
+          <div class="modal-title" style="font-size:18px;">🙋 Klaim Barang</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px;">Isi data kamu agar penemu bisa menghubungi kamu</div>
+        </div>
+        <button class="modal-close" onclick="closeClaimModalDirect()">✕</button>
+      </div>
+      <div id="claimItemName" style="background:var(--surface2);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;color:var(--text);margin-bottom:16px;"></div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Nama Lengkap *</label>
+          <input class="rfield" id="claimName" type="text" placeholder="Nama kamu" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">No. WhatsApp *</label>
+          <input class="rfield" id="claimWA" type="text" placeholder="628xxx" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Email *</label>
+          <input class="rfield" id="claimEmail" type="email" placeholder="email kamu" style="margin:0;width:100%;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Bukti Kepemilikan *</label>
+          <textarea class="rfield" id="claimProof" rows="3" placeholder="Deskripsikan ciri khas barangmu yang hanya kamu tahu (warna, merek, isi, dll)..." style="margin:0;width:100%;box-sizing:border-box;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="closeClaimModalDirect()" style="flex:1;padding:12px;background:var(--surface2);color:var(--text2);border:none;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;">Batal</button>
+        <button onclick="submitClaimForm()" style="flex:2;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📨 Kirim Klaim</button>
       </div>
     </div>
   </div>
@@ -398,6 +507,8 @@
 <!-- Scripts: app.js first (regular), then firebase.js (module) -->
 <script src="app.js"></script>
 <script type="module" src="firebase.js"></script>
+<!-- Ziven wang -->
+ <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
 
 </body>
 </html>
