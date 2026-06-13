@@ -1,48 +1,10 @@
-// ===== DATA =====
-const ITEMS = [
-  {id:1,name:"AirPods Pro",category:"electronics",location:"Library",status:"lost",time:"2 hours ago",date:"2024-06-03",emoji:"🎧",description:"AirPods Pro with a dark blue silicone case. Last seen on a table on the 2nd floor."},
-  {id:2,name:"Black Leather Wallet",category:"bags",location:"Canteen",status:"lost",time:"5 hours ago",date:"2024-06-03",emoji:"👛",description:"Black leather wallet, Braun Buffel brand. Contains student ID and several important cards."},
-  {id:3,name:"Student ID Card",category:"documents",location:"LAB",status:"Returned",time:"1 day ago",date:"2024-06-02",emoji:"🪪",description:"Student ID card under the name Budi Santoso, found in Computer Lab 3."},
-  {id:4,name:"Water Bottle",category:"others",location:"Others",status:"lost",time:"2 days ago",date:"2024-06-01",emoji:"🍶",description:"Black Corkcicle tumbler, 16oz. Lost near the motorcycle parking area."},
-  {id:5,name:"Car Keys",category:"keys",location:"Library",status:"Returned",time:"2 days ago",date:"2024-06-01",emoji:"🔑",description:"Toyota car key with a small bear keychain, found in the library lobby."},
-  {id:6,name:"Laptop Asus ROG",category:"electronics",location:"Classroom",status:"lost",time:"3 days ago",date:"2024-05-31",emoji:"💻",description:"Black Asus ROG gaming laptop. Left behind in a 3rd floor classroom."},
-  {id:7,name:"Calculus Textbook",category:"documents",location:"Library",status:"Returned",time:"4 days ago",date:"2024-05-30",emoji:"📘",description:"Calculus textbook 9th edition, found at a floor-level study table in the library."},
-  {id:8,name:"Digital Watch",category:"accessories",location:"Canteen",status:"lost",time:"4 days ago",date:"2024-05-30",emoji:"⌚",description:"Silver Casio watch. Lost while washing hands at the canteen sink."},
-  {id:9,name:"Backpack",category:"bags",location:"Classroom",status:"Returned",time:"1 week ago",date:"2024-05-27",emoji:"🎒",description:"Maroon Jansport backpack found left under a chair in classroom 301."},
-  {id:10,name:"Smartwatch Samsung",category:"electronics",location:"Others",status:"Returned",time:"1 week ago",date:"2024-05-27",emoji:"⌚",description:"Samsung Galaxy Watch found in the campus area."},
-  {id:11,name:"Geometry Set",category:"others",location:"Classroom",status:"lost",time:"1 week ago",date:"2024-05-26",emoji:"📐",description:"A set of compass and ruler tools lost in the classroom area."},
-  {id:12,name:"Blue Folder",category:"documents",location:"Others",status:"Returned",time:"1 week ago",date:"2024-05-25",emoji:"📂",description:"Blue folder containing lab report assignments, found in the 1st floor corridor."},
-  {id:13,name:"House Keys",category:"keys",location:"Parking Area",status:"lost",time:"1 week ago",date:"2024-05-24",emoji:"🔑",description:"House keychain with a small knitted doll, lost in the motorcycle parking area."},
-  {id:14,name:"Sony Headphones",category:"electronics",location:"Library",status:"Returned",time:"1 week ago",date:"2024-05-23",emoji:"🎧",description:"Sony WH-1000XM4 headphones found in the audio discussion room."},
-  {id:15,name:"Brown Satchel",category:"bags",location:"Canteen",status:"lost",time:"1 week ago",date:"2024-05-22",emoji:"💼",description:"Brown satchel bag left on a canteen table during lunch hour."},
-  {id:16,name:"Lab Coat",category:"others",location:"LAB",status:"Returned",time:"2 weeks ago",date:"2024-05-21",emoji:"🥼",description:"White lab coat with name embroidery, found in the Basic Chemistry Lab."},
-  {id:17,name:"Flash Drive 64GB",category:"electronics",location:"Library",status:"lost",time:"2 weeks ago",date:"2024-05-20",emoji:"💾",description:"Red SanDisk USB drive lost after using a public computer."},
-  {id:18,name:"Casio Calculator",category:"electronics",location:"Classroom",status:"Returned",time:"2 weeks ago",date:"2024-05-19",emoji:"🧮",description:"Casio fx-991EX calculator found in a desk drawer in classroom D302."},
-  {id:19,name:"Kindle E-reader",category:"electronics",location:"Library",status:"lost",time:"2 weeks ago",date:"2024-05-18",emoji:"📖",description:"Kindle Paperwhite with a gray case, lost in the sofa area."},
-  {id:20,name:"Mechanical Pencil",category:"others",location:"LAB",status:"Returned",time:"2 weeks ago",date:"2024-05-17",emoji:"✏️",description:"Rotring 600 mechanical pencil found in the Technical Drawing Lab."},
-  {id:21,name:"Umbrella Black",category:"others",location:"Canteen",status:"lost",time:"2 weeks ago",date:"2024-05-16",emoji:"☂️",description:"Black folding umbrella lost when left at the umbrella stand in front of the canteen."},
-  {id:22,name:"Bike Lock Key",category:"keys",location:"Parking Area",status:"Returned",time:"2 weeks ago",date:"2024-05-15",emoji:"🔑",description:"Bicycle padlock key found on the ground in the bicycle parking area."},
-  {id:23,name:"Student Card",category:"documents",location:"Others",status:"lost",time:"3 weeks ago",date:"2024-05-14",emoji:"🪪",description:"Engineering faculty student ID card lost in the campus area."},
-  {id:24,name:"Water Flask",category:"others",location:"Others",status:"Returned",time:"3 weeks ago",date:"2024-05-13",emoji:"🍶",description:"Yellow Hydro Flask found near the canteen area."},
-  {id:25,name:"Gym Bag Blue",category:"bags",location:"Others",status:"lost",time:"3 weeks ago",date:"2024-05-12",emoji:"🎒",description:"Blue Adidas sports bag lost in the campus area."},
-  {id:26,name:"Wireless Mouse",category:"electronics",location:"LAB",status:"Returned",time:"3 weeks ago",date:"2024-05-11",emoji:"🖱️",description:"Logitech Pebble mouse found in the Multimedia Lab."},
-  {id:27,name:"Charging Cable",category:"electronics",location:"Canteen",status:"lost",time:"3 weeks ago",date:"2024-05-10",emoji:"🔌",description:"Anker USB-C charging cable lost near an outlet in the canteen."},
-  {id:28,name:"Silver Earring",category:"accessories",location:"Library",status:"Returned",time:"3 weeks ago",date:"2024-05-09",emoji:"👂",description:"One silver earring found under the carpet in the reading area."},
-  {id:29,name:"Sunglasses",category:"accessories",location:"Others",status:"lost",time:"4 weeks ago",date:"2024-05-08",emoji:"🕶️",description:"Black Ray-Ban sunglasses lost in the garden in front of the rector's building."},
-  {id:30,name:"Thesis Draft",category:"documents",location:"Others",status:"Returned",time:"4 weeks ago",date:"2024-05-07",emoji:"📄",description:"A bundle of thesis draft papers found at the campus bus stop."},
-  {id:31,name:"Keycard",category:"keys",location:"Others",status:"lost",time:"4 weeks ago",date:"2024-05-06",emoji:"💳",description:"Robotics lab access card lost. Please report immediately if found."},
-  {id:32,name:"Camera Mirrorless",category:"electronics",location:"Others",status:"Returned",time:"4 weeks ago",date:"2024-05-05",emoji:"📷",description:"Fujifilm X-T30 mirrorless camera found in the gazebo area."},
-  {id:33,name:"Scarf Red",category:"accessories",location:"Canteen",status:"lost",time:"1 month ago",date:"2024-05-04",emoji:"🧣",description:"Red knitted scarf lost near the coffee stand."},
-  {id:34,name:"Hard Drive",category:"electronics",location:"Library",status:"Returned",time:"1 month ago",date:"2024-05-03",emoji:"🗄️",description:"WD 1TB external hard drive found near the printer."},
-  {id:35,name:"Pencil Case",category:"bags",location:"Classroom",status:"lost",time:"1 month ago",date:"2024-05-02",emoji:"✏️",description:"Floral-patterned pencil case lost in classroom 404."},
-  {id:36,name:"Hand Sanitizer",category:"others",location:"Others",status:"Returned",time:"1 month ago",date:"2024-05-01",emoji:"🧴",description:"Large hand sanitizer bottle found in the auditorium area."},
-  {id:37,name:"Notebook A5",category:"documents",location:"Library",status:"lost",time:"1 month ago",date:"2024-04-30",emoji:"📓",description:"Black Moleskine notebook lost, contains important lecture notes."},
-  {id:38,name:"iPad Pro",category:"electronics",location:"Classroom",status:"Returned",time:"1 month ago",date:"2024-04-29",emoji:"📱",description:"iPad Pro 11 inch found left behind in the classroom lobby area."},
-  {id:39,name:"Tan Wallet",category:"bags",location:"Parking Area",status:"lost",time:"1 month ago",date:"2024-04-28",emoji:"👛",description:"Small tan wallet lost near the north gate parking area."},
-  {id:40,name:"Sports Cap",category:"accessories",location:"Others",status:"Returned",time:"1 month ago",date:"2024-04-27",emoji:"🧢",description:"Blue New Era cap found in the parking area."}
-];
+// ===== DATA (dari Firestore) =====
+window.allItems = [];
 
-window.allItems = [...ITEMS];
+// ===== PAGINATION =====
+const ITEMS_PER_PAGE = 12;
+let searchCurrentPage = 1;
+let searchFilteredItems = [];
 
 // ===== CATEGORY COLORS =====
 const CAT_COLORS = {
@@ -71,7 +33,8 @@ function getCatColor(cat) {
 document.addEventListener('DOMContentLoaded', () => {
   initStats();
   renderGrid('homeGrid', allItems.filter(i => i.status === 'lost').slice(0, 8));
-  renderGrid('searchGrid', allItems);
+  searchFilteredItems = allItems;
+  renderSearchPage();
   renderSidebarRecent();
   initStatsPage();
   initNavSearch();
@@ -82,7 +45,7 @@ function renderGrid(id, items) {
   const el = document.getElementById(id);
   if (!el) return;
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-ico">🔍</div><p>Tidak ada item yang cocok</p></div>`;
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-ico">🔍</div><p>No matching items found</p></div>`;
     return;
   }
   el.innerHTML = items.map(item => {
@@ -146,7 +109,7 @@ function showPage(name) {
     setTimeout(window.loadMyReports, 100);
   }
   if (name === 'report' && !window._currentUser) {
-    showToast("Login dulu untuk melaporkan barang! 🔐", "error");
+    showToast("Please login first to report an item! 🔐", "error");
     setTimeout(() => toggleAuthModal(), 600);
     return;
   }
@@ -161,30 +124,72 @@ function showPage(name) {
 }
 
 // ===== SEARCH FILTERS =====
-function applyFilters() {
+function applyFilters(resetPage = true) {
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
   const checkedFilters = { status: [], category: [], location: [] };
   document.querySelectorAll('.filter-panel input:checked').forEach(cb => {
     const type = cb.getAttribute('data-filter');
     if (type) checkedFilters[type].push(cb.value.toLowerCase());
   });
-  const cards = document.querySelectorAll('#searchGrid .item-card');
-  let visible = 0;
-  cards.forEach(card => {
-    const name   = card.dataset.name || '';
-    const cat    = card.dataset.category || '';
-    const status = card.dataset.status || '';
-    const loc    = card.dataset.location || '';
+
+  // Filter data-level
+  searchFilteredItems = allItems.filter(item => {
+    const name   = (item.name || '').toLowerCase();
+    const cat    = (item.category || '').toLowerCase();
+    const status = (item.status || '').toLowerCase();
+    const loc    = (item.location || '').toLowerCase();
     const mQ   = !q || name.includes(q) || loc.includes(q);
     const mSt  = !checkedFilters.status.length   || checkedFilters.status.includes(status);
     const mCat = !checkedFilters.category.length || checkedFilters.category.includes(cat);
     const mLoc = !checkedFilters.location.length || checkedFilters.location.some(l => loc.includes(l));
-    const show = mQ && mSt && mCat && mLoc;
-    card.style.display = show ? '' : 'none';
-    if (show) visible++;
+    return mQ && mSt && mCat && mLoc;
   });
+
+  if (resetPage) searchCurrentPage = 1;
+  renderSearchPage();
+}
+
+function renderSearchPage() {
+  const total = searchFilteredItems.length;
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const start = (searchCurrentPage - 1) * ITEMS_PER_PAGE;
+  const pageItems = searchFilteredItems.slice(start, start + ITEMS_PER_PAGE);
+
+  renderGrid('searchGrid', pageItems);
+
   const meta = document.getElementById('resultMeta');
-  if (meta) meta.textContent = `Menampilkan ${visible} item`;
+  if (meta) meta.textContent = `Showing ${total} item${total !== 1 ? 's' : ''}`;
+
+  // Render pagination
+  const paginationEl = document.getElementById('searchPagination');
+  if (!paginationEl) return;
+
+  if (totalPages <= 1) { paginationEl.innerHTML = ''; return; }
+
+  let btns = '';
+  // Prev
+  btns += `<button class="page-btn" onclick="goToPage(${searchCurrentPage - 1})" ${searchCurrentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  // Pages
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= searchCurrentPage - 2 && i <= searchCurrentPage + 2)) {
+      btns += `<button class="page-btn ${i === searchCurrentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    } else if (i === searchCurrentPage - 3 || i === searchCurrentPage + 3) {
+      btns += `<span style="padding:0 4px;color:var(--text3);">…</span>`;
+    }
+  }
+  // Next
+  btns += `<button class="page-btn" onclick="goToPage(${searchCurrentPage + 1})" ${searchCurrentPage === totalPages ? 'disabled' : ''}>›</button>`;
+
+  paginationEl.innerHTML = btns;
+}
+
+function goToPage(page) {
+  const totalPages = Math.ceil(searchFilteredItems.length / ITEMS_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  searchCurrentPage = page;
+  renderSearchPage();
+  // Scroll to top of grid
+  document.getElementById('searchGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 document.addEventListener('change', e => {
@@ -203,29 +208,22 @@ document.addEventListener('DOMContentLoaded', () => {
 function quickChip(el, type) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  const cards = document.querySelectorAll('#searchGrid .item-card');
-  let visible = 0;
-  cards.forEach(card => {
-    const cat    = card.dataset.category;
-    const status = card.dataset.status;
-    const show   = !type || cat === type || status === type;
-    card.style.display = show ? '' : 'none';
-    if (show) visible++;
+  // Clear other filters and apply chip as filter
+  document.querySelectorAll('.filter-panel input').forEach(cb => {
+    const ftype = cb.getAttribute('data-filter');
+    cb.checked = type && (ftype === 'category' || ftype === 'status') && cb.value.toLowerCase() === type;
   });
-  const meta = document.getElementById('resultMeta');
-  if (meta) meta.textContent = `Menampilkan ${visible} item`;
+  applyFilters(true);
 }
 
 // ===== SORT =====
 function sortItems() {
-  const val  = document.getElementById('sortSelect').value;
-  const grid = document.getElementById('searchGrid');
-  const cards = [...grid.querySelectorAll('.item-card')];
-  cards.sort((a, b) => {
-    if (val === 'newest')   return b.dataset.id - a.dataset.id;
-    if (val === 'oldest')   return a.dataset.id - b.dataset.id;
-    if (val === 'name')     return (a.dataset.name || '').localeCompare(b.dataset.name || '');
-    if (val === 'category') return (a.dataset.category || '').localeCompare(b.dataset.category || '');
+  const val = document.getElementById('sortSelect').value;
+  searchFilteredItems.sort((a, b) => {
+    if (val === 'newest')   return String(b.id).localeCompare(String(a.id));
+    if (val === 'oldest')   return String(a.id).localeCompare(String(b.id));
+    if (val === 'name')     return (a.name || '').localeCompare(b.name || '');
+    if (val === 'category') return (a.category || '').localeCompare(b.category || '');
     return 0;
   });
   cards.forEach(c => grid.appendChild(c));
@@ -448,7 +446,8 @@ function toggleDark() {
   document.getElementById('darkToggle').textContent = isDark ? '🌙' : '☀️';
   // Re-render cards to update gradients
   renderGrid('homeGrid', allItems.filter(i => i.status === 'lost').slice(0, 8));
-  renderGrid('searchGrid', allItems);
+  searchFilteredItems = allItems;
+  renderSearchPage();
 }
 
 // ===== TOAST =====
@@ -507,7 +506,7 @@ let _claimTarget = null;
 function openClaimForm() {
   if (!window._currentUser) {
     closeModalDirect();
-    showToast("Login dulu untuk mengklaim barang! 🔐", "error");
+    showToast("Please login first to claim an item! 🔐", "error");
     setTimeout(() => toggleAuthModal(), 600);
     return;
   }
@@ -554,7 +553,7 @@ function submitClaimForm() {
   if (!_claimTarget) return;
   const tnc = document.getElementById("claimTnC");
   if (!tnc || !tnc.checked) {
-    window.showToast("Centang persetujuan syarat & ketentuan dulu! ☝️", "error");
+    window.showToast("Please agree to the Terms & Conditions first! ☝️", "error");
     return;
   }
   window.doSubmitClaim(
@@ -572,6 +571,8 @@ window.initStats         = initStats;
 window.initStatsPage     = initStatsPage;
 window.renderSidebarRecent = renderSidebarRecent;
 window.applyFilters      = applyFilters;
+window.goToPage          = goToPage;
+window.renderSearchPage  = renderSearchPage;
 window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;

@@ -138,12 +138,12 @@ window.submitReport = async function () {
   const file      = fileInput?.files[0] || null;
 
   if (!item || !category || !location || !name || !phone) {
-    window.showToast("Lengkapi semua field terlebih dahulu!", "error");
+    window.showToast("Please fill in all required fields!", "error");
     return;
   }
 
   try {
-    window.showToast("Menyimpan laporan...", "");
+    window.showToast("Saving your report...", "");
 
     let imageUrl = null;
     if (file) imageUrl = await compressImage(file);
@@ -155,7 +155,7 @@ window.submitReport = async function () {
       createdAt:   new Date()
     });
 
-    window.showToast("Report berhasil dikirim! ✅", "success");
+    window.showToast("Report submitted successfully! ✅", "success");
     ["rItem","rCategory","rLocation","rDesc","rName","rPhone"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
@@ -166,7 +166,7 @@ window.submitReport = async function () {
 
   } catch (error) {
     console.error("Firebase error:", error);
-    window.showToast("Gagal menyimpan data ❌", "error");
+    window.showToast("Failed to save data ❌", "error");
   }
 };
 
@@ -178,12 +178,12 @@ window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, repo
   const claimerProof = document.getElementById("claimProof").value.trim();
 
   if (!claimerName || !claimerWA || !claimerEmail || !claimerProof) {
-    window.showToast("Lengkapi semua field klaim!", "error");
+    window.showToast("Please fill in all claim fields!", "error");
     return;
   }
 
   try {
-    window.showToast("Mengirim klaim...", "");
+    window.showToast("Submitting claim...", "");
 
     await addDoc(collection(db, "claims"), {
       reportId:      firestoreId,
@@ -199,10 +199,10 @@ window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, repo
     // WA notification ke finder
     const rawPhone = (reporterPhone || "").replace(/\D/g, "");
     const waPhone  = rawPhone.startsWith("0") ? "62" + rawPhone.slice(1) : rawPhone;
-    const waMsg    = `Halo ${reporterName}, ada yang mengklaim barang "${itemName}" yang kamu laporkan di FindIt BINUS!\n\nNama: ${claimerName}\nWA: ${claimerWA}\nEmail: ${claimerEmail}\nBukti: ${claimerProof}\n\nLogin ke FindIt untuk verifikasi klaim ini.`;
+    const waMsg    = `Hi ${reporterName}, someone has claimed the item "${itemName}" that you reported on FindIt BINUS!\n\nName: ${claimerName}\nWhatsApp: ${claimerWA}\nEmail: ${claimerEmail}\nProof: ${claimerProof}\n\nPlease login to FindIt to verify this claim.`;
     const waUrl    = "https://wa.me/" + waPhone + "?text=" + encodeURIComponent(waMsg);
 
-    window.showToast("Klaim berhasil dikirim! Penemu akan menghubungimu ✅", "success");
+    window.showToast("Claim submitted! The finder will contact you ✅", "success");
     window.closeClaimModalDirect();
 
     // Buka WA ke finder
@@ -210,7 +210,7 @@ window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, repo
 
   } catch (error) {
     console.error("Claim error:", error);
-    window.showToast("Gagal mengirim klaim ❌", "error");
+    window.showToast("Failed to submit claim ❌", "error");
   }
 };
 
@@ -240,7 +240,13 @@ window.loadMyReports = async function() {
     });
 
     if (rSnap.empty) {
-      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Kamu belum pernah melaporkan barang. <b style="color:var(--primary);cursor:pointer;" onclick="showPage(\'report\')">Report sekarang →</b></div>';
+      container.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:var(--text3);">
+          <div style="font-size:52px;margin-bottom:16px;">📭</div>
+          <div style="font-size:17px;font-weight:700;color:var(--text2);margin-bottom:8px;">No reports yet</div>
+          <div style="font-size:13px;margin-bottom:24px;">You haven't reported any found items yet.<br>Help someone get their belongings back!</div>
+          <button onclick="showPage('report')" style="padding:11px 28px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📋 Report a Found Item</button>
+        </div>`;
       return;
     }
 
@@ -261,7 +267,7 @@ window.loadMyReports = async function() {
       const emoji  = EMOJI_MAP[r.category] || "📦";
       const status = r.status === "lost" ? "🔴 Unclaimed" : "✅ Claimed";
       const claimsHtml = claims.length === 0
-        ? '<div style="color:var(--text3);font-size:13px;padding:10px 0;">Belum ada yang mengklaim.</div>'
+        ? '<div style="color:var(--text3);font-size:13px;padding:10px 0;">No claims yet.</div>'
         : claims.map(c => `
           <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;border-left:3px solid ${c.status === 'accepted' ? 'var(--green)' : 'var(--primary)'};">
             <div style="font-weight:700;font-size:14px;color:var(--text);">${c.claimerName} ${c.status === 'accepted' ? '<span style="color:var(--green);font-size:12px;">✅ Diterima</span>' : '<span style="color:var(--primary);font-size:12px;">⏳ Pending</span>'}</div>
@@ -269,8 +275,8 @@ window.loadMyReports = async function() {
             <div style="font-size:13px;color:var(--text2);margin-top:8px;font-style:italic;">"${c.claimerProof}"</div>
             ${c.status !== 'accepted' ? `
             <div style="display:flex;gap:8px;margin-top:12px;">
-              <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="flex:1;padding:8px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">✅ Verifikasi & Claimed</button>
-              <a href="https://wa.me/${c.claimerWA.replace(/\D/g,'')}?text=${encodeURIComponent('Halo '+c.claimerName+', kami konfirmasi bahwa barang '+r.item+' memang milik kamu. Silakan hubungi kami untuk pengambilan!')}" target="_blank" style="flex:1;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;text-align:center;">📱 Chat via WA</a>
+              <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="flex:1;padding:8px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">✅ Verify & Mark as Claimed</button>
+              <a href="https://wa.me/${c.claimerWA.replace(/\D/g,'')}?text=${encodeURIComponent('Halo '+c.claimerName+', kami confirm that the item '+r.item+' belongs to you. Please contact us to arrange pickup!')}" target="_blank" style="flex:1;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;text-align:center;">📱 Chat on WhatsApp</a>
             </div>` : ''}
           </div>`).join('');
 
@@ -284,14 +290,14 @@ window.loadMyReports = async function() {
             </div>
             ${r.status === 'lost' ? '' : '<span style="background:#D1FAE5;color:#065F46;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Claimed</span>'}
           </div>
-          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;">📥 Klaim Masuk (${claims.length})</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;">📥 Claims Received (${claims.length})</div>
           ${claimsHtml}
         </div>`;
     }).join('');
 
   } catch (error) {
     console.error(error);
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">Gagal memuat data. Pastikan kamu sudah login.</div>';
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">Failed to load data. Please make sure you are logged in.</div>';
   }
 };
 
@@ -300,11 +306,11 @@ window.acceptClaim = async function(claimId, reportId, claimerWA, claimerName) {
   try {
     await updateDoc(doc(db, "claims", claimId), { status: "accepted" });
     await updateDoc(doc(db, "reports", reportId), { status: "returned" });
-    window.showToast("Klaim diterima! Status diupdate ke Claimed ✅", "success");
+    window.showToast("Claim accepted! Status updated to Claimed ✅", "success");
     window.loadMyReports(); // Refresh
   } catch (error) {
     console.error(error);
-    window.showToast("Gagal update status ❌", "error");
+    window.showToast("Failed to update status ❌", "error");
   }
 };
 
@@ -318,9 +324,9 @@ window.doLogin = async function() {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     window.closeAuthModalDirect();
-    window.showToast("Login berhasil! 👋", "success");
+    window.showToast("Login successful! 👋", "success");
   } catch (e) {
-    errEl.textContent = "Email atau password salah.";
+    errEl.textContent = "Incorrect email or password.";
     errEl.style.display = "block";
   }
 };
@@ -334,7 +340,7 @@ window.doRegister = async function() {
   errEl.style.display = "none";
 
   if (!name || !email || !phone || !password) {
-    errEl.textContent = "Lengkapi semua field.";
+    errEl.textContent = "Please fill in all fields.";
     errEl.style.display = "block";
     return;
   }
@@ -343,11 +349,11 @@ window.doRegister = async function() {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
     window.closeAuthModalDirect();
-    window.showToast("Registrasi berhasil! Selamat datang 🎉", "success");
+    window.showToast("Registration successful! Welcome 🎉", "success");
   } catch (e) {
     errEl.textContent = e.code === "auth/email-already-in-use"
-      ? "Email sudah digunakan."
-      : "Registrasi gagal: " + e.message;
+      ? "Email is already in use."
+      : "Registration failed: " + e.message;
     errEl.style.display = "block";
   }
 };
@@ -358,7 +364,7 @@ window.doForgotPassword = async function() {
   errEl.style.display = "none";
 
   if (!email) {
-    errEl.textContent = "Masukkan email kamu dulu.";
+    errEl.textContent = "Please enter your email first.";
     errEl.style.display = "block";
     return;
   }
@@ -366,16 +372,16 @@ window.doForgotPassword = async function() {
   try {
     await sendPasswordResetEmail(auth, email);
     window.closeAuthModalDirect();
-    window.showToast("Link reset password sudah dikirim ke email kamu! 📧", "success");
+    window.showToast("Password reset link sent to your email! 📧", "success");
   } catch (e) {
     errEl.textContent = e.code === "auth/user-not-found"
-      ? "Email tidak terdaftar."
-      : "Gagal mengirim email reset.";
+      ? "Email not registered."
+      : "Failed to send reset email.";
     errEl.style.display = "block";
   }
 };
 
 window.doLogout = async function() {
   await signOut(auth);
-  window.showToast("Berhasil logout.", "");
+  window.showToast("Logged out successfully.", "");
 };
