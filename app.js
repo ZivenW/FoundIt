@@ -87,9 +87,13 @@ function renderGrid(id, items) {
   }
   el.innerHTML = items.map(item => {
     const isLost = item.status.toLowerCase() === 'lost';
+    const thumbInner = item.imageUrl
+      ? `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`
+      : item.emoji;
     return `<div class="item-card" data-id="${item.id}" data-category="${item.category}" 
-    data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}">
-      <div class="item-thumb" style="background:${getCatColor(item.category)}">${item.emoji}</div>
+    data-status="${item.status.toLowerCase()}" data-location="${item.location.toLowerCase()}" data-name="${item.name.toLowerCase()}" 
+    style="cursor:pointer;">
+      <div class="item-thumb" style="background:${getCatColor(item.category)};overflow:hidden;">${thumbInner}</div>
       <div class="item-body">
         <div class="item-name">${item.name}</div>
         <div class="item-loc">📍 ${item.location}</div>
@@ -100,11 +104,11 @@ function renderGrid(id, items) {
   }).join('');
 }
 
-// ===== EVENT DELEGATION FOR GRID CLICKS =====
+// ===== CARD CLICK — event delegation =====
 document.addEventListener('click', function(e) {
   const card = e.target.closest('.item-card');
   if (!card) return;
-  const id = card.getAttribute('data-id');
+  const id = card.dataset.id;
   if (id) openModal(id);
 });
 
@@ -236,7 +240,11 @@ function openModal(id) {
   if (!item) return;
   const isLost = item.status.toLowerCase() === 'lost';
   document.getElementById('modalTitle').textContent  = item.name;
-  document.getElementById('modalThumb').textContent  = item.emoji;
+  if (item.imageUrl) {
+    document.getElementById('modalThumb').innerHTML = '<img src="' + item.imageUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">';
+  } else {
+    document.getElementById('modalThumb').textContent = item.emoji;
+  }
   document.getElementById('modalThumb').style.background = getCatColor(item.category);
   document.getElementById('modalBadge').innerHTML    = `<span class="badge badge-${isLost ? 'lost' : 'returned'}">${isLost ? '🔴 Unclaimed' : '✅ Claimed'}</span>`;
   document.getElementById('modalLoc').textContent    = item.location;
@@ -244,7 +252,11 @@ function openModal(id) {
   document.getElementById('modalDate').textContent   = item.date;
   document.getElementById('modalTime').textContent   = item.time;
   document.getElementById('modalDesc').textContent   = item.description;
-  document.getElementById('modalWa').href = 'https://wa.me/628123456789?text=Halo,%20saya%20melihat%20laporan%20barang%20' + encodeURIComponent(item.name) + '%20di%20FindIt%20BINUS';
+  // Format nomor: hilangkan karakter non-digit, ganti awalan 0 dengan 62
+  const rawPhone = (item.reporterPhone || '628123456789').replace(/\D/g, '');
+  const waPhone  = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone;
+  const waMsg    = 'Halo, saya kehilangan ' + item.name + '. Saya melihat laporan Anda di FindIt BINUS dan sepertinya itu milik saya. Boleh saya mengambilnya?';
+  document.getElementById('modalWa').href = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(waMsg);
   document.getElementById('itemModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -464,5 +476,3 @@ window.applyFilters      = applyFilters;
 window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;
-
-document.querySelector('.item-card')?.getAttribute('onclick')
