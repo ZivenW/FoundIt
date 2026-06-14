@@ -493,11 +493,22 @@ function switchAuthTab(tab) {
   document.getElementById("formRegister").style.display = tab === "register" ? "block" : "none";
   const forgotEl = document.getElementById("formForgot");
   if (forgotEl) forgotEl.style.display = tab === "forgot" ? "block" : "none";
-  document.getElementById("tabLogin").style.background    = tab === "login"    ? "var(--primary)" : "var(--surface)";
-  document.getElementById("tabLogin").style.color         = tab === "login"    ? "#fff"           : "var(--text2)";
-  document.getElementById("tabRegister").style.background = tab === "register" ? "var(--primary)" : "var(--surface)";
-  document.getElementById("tabRegister").style.color      = tab === "register" ? "#fff"           : "var(--text2)";
-  document.getElementById("authError").style.display = "none";
+
+  // Update modal title
+  const titleEl = document.getElementById("authModalTitle");
+  if (titleEl) {
+    if (tab === "login")    titleEl.textContent = "Login to FindIt";
+    if (tab === "register") titleEl.textContent = "Create an Account";
+    if (tab === "forgot")   titleEl.textContent = "Reset Password";
+  }
+
+  const errEl = document.getElementById("authError");
+  if (errEl) {
+    errEl.style.display = "none";
+    errEl.style.background = "";
+    errEl.style.color = "";
+    errEl.style.border = "";
+  }
 }
 
 // ===== CLAIM MODAL =====

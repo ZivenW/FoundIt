@@ -42,7 +42,7 @@
   --border2: #484F58;
   --text: #F0F6FC;
   --text2: #8B949E;
-  --text3: #484F58;
+  --text3: #7D8590;
   --primary-light: #1C2A3F;
   --primary-mid: #1A3A5C;
   --green-light: #0F2C1E;
@@ -364,4 +364,119 @@ select.rfield { appearance:none; cursor:pointer; }
   .report-sidebar { grid-template-columns:1fr; display:flex; }
   .rform-row { grid-template-columns:1fr; }
   .search-bar-row { flex-wrap:wrap; }
+}
+
+/* ===== DARK MODE SPECIFIC FIXES ===== */
+[data-theme="dark"] .rfield {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border);
+}
+[data-theme="dark"] .rfield::placeholder {
+  color: var(--text3);
+}
+[data-theme="dark"] select.rfield option {
+  background: var(--surface2);
+  color: var(--text);
+}
+[data-theme="dark"] .sort-select {
+  background: var(--surface2);
+  color: var(--text);
+}
+[data-theme="dark"] .sort-select option {
+  background: var(--surface2);
+  color: var(--text);
+}
+[data-theme="dark"] .modal {
+  background: var(--surface);
+}
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0,0,0,.75);
+}
+/* T&C box dark mode */
+[data-theme="dark"] #claimModal .modal-body > div[style*="FEF9C3"] {
+  background: #2C2800 !important;
+  border-color: #665500 !important;
+}
+[data-theme="dark"] #claimModal .modal-body > div[style*="FEF9C3"] span {
+  color: #D4A800 !important;
+}
+/* Auth modal tab buttons */
+[data-theme="dark"] #tabLogin,
+[data-theme="dark"] #tabRegister {
+  border-bottom: 1px solid var(--border);
+}
+/* Float cards (hero) - always white */
+.float-card {
+  color: #0F172A !important;
+}
+/* Map location item dark fix */
+[data-theme="dark"] .map-loc-item:hover {
+  background: var(--primary-light);
+}
+/* Step cards */
+[data-theme="dark"] .step-card {
+  background: var(--surface2);
+}
+/* Sidebar contact items */
+[data-theme="dark"] .contact-item {
+  background: var(--surface2);
+  color: var(--text2);
+}
+/* Search bar input */
+[data-theme="dark"] .search-bar-big {
+  background: var(--surface2);
+}
+[data-theme="dark"] .search-bar-big input {
+  background: transparent;
+  color: var(--text);
+}
+/* Navbar search */
+[data-theme="dark"] .search-wrap input {
+  background: var(--surface2);
+  color: var(--text);
+}
+/* Item grid */
+[data-theme="dark"] #searchGrid .item-card,
+[data-theme="dark"] .items-grid .item-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* Upload zone dark */
+[data-theme="dark"] .upload-zone {
+  background: var(--surface2);
+  border-color: var(--border);
+}
+[data-theme="dark"] .upload-zone:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-mid);
+}
+/* Chip dark */
+[data-theme="dark"] .chip {
+  background: var(--surface2);
+  color: var(--text2);
+  border-color: var(--border);
+}
+[data-theme="dark"] .chip.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+/* My Reports claims */
+[data-theme="dark"] #myReportsList > div {
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* Pagination dark */
+[data-theme="dark"] .page-btn {
+  background: var(--surface2);
+  color: var(--text2);
+  border-color: var(--border);
+}
+[data-theme="dark"] .page-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+[data-theme="dark"] .page-btn.active {
+  background: var(--primary);
+  color: #fff;
 }

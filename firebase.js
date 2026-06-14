@@ -321,12 +321,32 @@ window.doLogin = async function() {
   const errEl    = document.getElementById("authError");
   errEl.style.display = "none";
 
+  if (!email || !password) {
+    errEl.textContent = "Please fill in your email and password.";
+    errEl.style.display = "block";
+    return;
+  }
+
   try {
     await signInWithEmailAndPassword(auth, email, password);
     window.closeAuthModalDirect();
     window.showToast("Login successful! 👋", "success");
   } catch (e) {
-    errEl.textContent = "Incorrect email or password.";
+    let msg = "Login failed. Please try again.";
+    if (e.code === "auth/user-not-found" || e.code === "auth/invalid-email") {
+      msg = "❌ Email not registered. Please register first.";
+      // Auto-switch to register after 1.5s
+      setTimeout(() => window.switchAuthTab('register'), 1500);
+    } else if (e.code === "auth/wrong-password") {
+      msg = "❌ Incorrect password. Please try again.";
+    } else if (e.code === "auth/invalid-credential") {
+      // Firebase v9+ combines user-not-found and wrong-password
+      // Try to determine which one by checking if email exists
+      msg = "❌ Email not registered or incorrect password.";
+    } else if (e.code === "auth/too-many-requests") {
+      msg = "⚠️ Too many failed attempts. Please try again later.";
+    }
+    errEl.textContent = msg;
     errEl.style.display = "block";
   }
 };
@@ -344,16 +364,50 @@ window.doRegister = async function() {
     errEl.style.display = "block";
     return;
   }
+  if (password.length < 6) {
+    errEl.textContent = "Password must be at least 6 characters.";
+    errEl.style.display = "block";
+    return;
+  }
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
-    window.closeAuthModalDirect();
-    window.showToast("Registration successful! Welcome 🎉", "success");
+    // Sign out immediately — user must login manually
+    await signOut(auth);
+
+    // Show success state in modal instead of closing
+    const errEl2 = document.getElementById("authError");
+    errEl2.style.background = "#D1FAE5";
+    errEl2.style.color = "#065F46";
+    errEl2.style.border = "1px solid #6EE7B7";
+    errEl2.textContent = "✅ Registration successful! Please login with your new account.";
+    errEl2.style.display = "block";
+
+    // Clear register fields
+    ["regName","regEmail","regPhone","regPassword"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    // Switch to login tab after 2s
+    setTimeout(() => {
+      errEl2.style.background = "";
+      errEl2.style.color = "";
+      errEl2.style.border = "";
+      errEl2.style.display = "none";
+      window.switchAuthTab("login");
+    }, 2500);
+
   } catch (e) {
-    errEl.textContent = e.code === "auth/email-already-in-use"
-      ? "Email is already in use."
-      : "Registration failed: " + e.message;
+    if (e.code === "auth/email-already-in-use") {
+      errEl.textContent = "❌ This email is already registered. Please login instead.";
+      setTimeout(() => window.switchAuthTab("login"), 2000);
+    } else {
+      errEl.textContent = "Registration failed: " + e.message;
+    }
+    errEl.style.background = "";
+    errEl.style.color = "";
     errEl.style.display = "block";
   }
 };
