@@ -24,7 +24,7 @@
     <button class="nav-btn"        id="nav-search" onclick="showPage('search')">🔎 Search</button>
     <button class="nav-btn"        id="nav-report" onclick="showPage('report')">📋 Report Found</button>
     <button class="nav-btn"        id="nav-stats"      onclick="showPage('stats')">📊 Statistics</button>
-    <button class="nav-btn"        id="nav-myreports"  onclick="showPage('myreports')" style="display:none;">📦 My Reports</button>
+    <button class="nav-btn"        id="nav-myreports"  onclick="showPage('myreports')" style="display:none;position:relative;">📦 My Reports<span id="myReportsBadge" style="display:none;position:absolute;top:-6px;right:-8px;background:#EF4444;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:999px;padding:0 4px;line-height:18px;text-align:center;"></span></button>
   </div>
 
   <div class="nav-right">
@@ -219,16 +219,20 @@
       <div class="rform-title">📋 Report a Found Item</div>
       <div class="rform-sub">Fill in the details of the item you found so the owner can claim it.</div>
       <div class="rform-fields">
-        <div class="upload-zone" onclick="document.getElementById('imgInput').click()">
+        <div class="upload-zone" onclick="document.getElementById('imgInput').click()" style="position:relative;min-height:160px;">
           <div class="upload-ico">🖼️</div>
           <p><b>Click to upload a photo</b> or drag &amp; drop</p>
           <p style="margin-top:4px;font-size:11px;">PNG, JPG (max 5MB)</p>
           <input type="file" id="imgInput" accept="image/*" hidden onchange="previewImg(this)">
-          <img id="imgPreview" src="" alt="" style="max-height:80px;border-radius:8px;margin-top:10px;display:none;">
+          <img id="imgPreview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:10px;cursor:pointer;" onclick="openLightbox(this.src)">
+          <button id="removePhotoBtn" onclick="removePhoto(event)" style="display:none;position:absolute;top:8px;right:8px;width:28px;height:28px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;font-size:16px;cursor:pointer;z-index:10;line-height:1;align-items:center;justify-content:center;">✕</button>
         </div>
         <div class="rform-row">
           <input class="rfield" id="rName"  placeholder="Your name"               type="text">
-          <input class="rfield" id="rPhone" placeholder="WhatsApp Number (62...)"    type="text">
+          <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);">
+              <span style="padding:10px 12px;background:var(--surface2);color:var(--text2);font-weight:700;font-size:14px;white-space:nowrap;border-right:1.5px solid var(--border);">+62</span>
+              <input id="rPhone" type="tel" placeholder="8xxxxxxxxx" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="border:none;outline:none;padding:10px 12px;flex:1;background:transparent;color:var(--text);font-size:14px;">
+            </div>
         </div>
         <input class="rfield" id="rItem" placeholder="Item name (e.g. Black Wallet)" type="text">
         <div class="rform-row">
@@ -252,10 +256,30 @@
           </select>
         </div>
         <textarea class="rfield" id="rDesc" placeholder="Item description (color, brand, distinctive features...)" rows="3" style="resize:vertical;"></textarea>
-        <button class="rsubmit" onclick="submitReport()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-          Submit Report
-        </button>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2);">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">📲 Additional Contacts <span style="font-weight:400;color:var(--text3);">(optional — claimer will see these in the claim form)</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;width:28px;text-align:center;">💬</span>
+              <input class="rfield" id="rLine" placeholder="Line ID (optional)" type="text" style="margin:0;flex:1;">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;width:28px;text-align:center;">📸</span>
+              <input class="rfield" id="rInstagram" placeholder="Instagram username (optional)" type="text" style="margin:0;flex:1;">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;width:28px;text-align:center;">✈️</span>
+              <input class="rfield" id="rTelegram" placeholder="Telegram username (optional)" type="text" style="margin:0;flex:1;">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="cancelReport()" style="flex:1;padding:14px;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">✕ Cancel</button>
+          <button class="rsubmit" onclick="submitReport()" style="flex:3;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Submit Report
+          </button>
+        </div>
       </div>
     </div>
 
@@ -388,12 +412,20 @@
         <div class="meta-item"><div class="meta-lbl">⏱️ Waktu</div><div class="meta-val" id="modalTime"></div></div>
       </div>
       <div class="modal-desc" id="modalDesc"></div>
-      <div class="modal-actions">
-        <a class="btn-wa" id="modalWa" href="#" target="_blank">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.571a.75.75 0 00.918.919l5.8-1.517A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.92 0-3.722-.51-5.27-1.402l-.378-.22-3.923 1.027 1.003-3.81-.245-.393A10 10 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-          Contact via WA
-        </a>
-        <button class="btn-claim" onclick="openClaimForm()">🙋 This Is Mine — Claim It</button>
+      <div class="modal-actions" style="flex-direction:column;gap:10px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:2px;">Contact Finder</div>
+        <div style="display:flex;gap:8px;">
+          <a id="modalWa" href="#" target="_blank" style="flex:1;padding:10px;background:#25D366;color:#fff;border-radius:10px;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
+            📱 WhatsApp
+          </a>
+          <a id="modalEmail" href="#" style="flex:1;padding:10px;background:var(--primary);color:#fff;border-radius:10px;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
+            📧 Email
+          </a>
+          <button onclick="copyFinderContact()" style="flex:1;padding:10px;background:var(--surface2);color:var(--text2);border-radius:10px;font-weight:700;font-size:13px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+            📋 Copy
+          </button>
+        </div>
+        <button class="btn-claim" onclick="openClaimForm()" style="width:100%;">🙋 This Is Mine — Claim It</button>
       </div>
     </div>
   </div>
@@ -433,7 +465,10 @@
         </div>
         <div style="margin-bottom:20px;">
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
-          <input class="rfield" id="loginPassword" type="password" placeholder="Password" style="margin:0;width:100%;box-sizing:border-box;">
+          <div style="position:relative;display:flex;align-items:center;">
+            <input class="rfield" id="loginPassword" type="password" placeholder="Password" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
+            <button type="button" onclick="togglePass('loginPassword','eyeLogin')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeLogin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
         <button onclick="doLogin()" style="width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Login</button>
         <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text3);">
@@ -465,11 +500,24 @@
         </div>
         <div style="margin-bottom:12px;">
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">WhatsApp Number</label>
-          <input class="rfield" id="regPhone" type="text" placeholder="628xxx" style="margin:0;width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);width:100%;">
+              <span style="padding:10px 12px;background:var(--surface2);color:var(--text2);font-weight:700;font-size:14px;white-space:nowrap;border-right:1.5px solid var(--border);">+62</span>
+              <input id="regPhone" type="tel" placeholder="8xxxxxxxxx" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="border:none;outline:none;padding:10px 12px;flex:1;background:transparent;color:var(--text);font-size:14px;">
+            </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input class="rfield" id="regPassword" type="password" placeholder="Min. 6 characters" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
+            <button type="button" onclick="togglePass('regPassword','eyeReg')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeReg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
         <div style="margin-bottom:20px;">
-          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
-          <input class="rfield" id="regPassword" type="password" placeholder="Min. 6 characters" style="margin:0;width:100%;box-sizing:border-box;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Confirm Password</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input class="rfield" id="regPasswordConfirm" type="password" placeholder="Re-enter password" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
+            <button type="button" onclick="togglePass('regPasswordConfirm','eyeRegConfirm')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeRegConfirm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
         <button onclick="doRegister()" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Sign Up Now</button>
         <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text3);">Already have an account? <b style="color:var(--primary);cursor:pointer;" onclick="switchAuthTab('login')">Login</b></p>
@@ -497,7 +545,10 @@
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">WhatsApp Number *</label>
-          <input class="rfield" id="claimWA" type="text" placeholder="628xxx" style="margin:0;width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);width:100%;">
+              <span style="padding:10px 12px;background:var(--surface2);color:var(--text2);font-weight:700;font-size:14px;white-space:nowrap;border-right:1.5px solid var(--border);">+62</span>
+              <input id="claimWA" type="tel" placeholder="8xxxxxxxxx" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="border:none;outline:none;padding:10px 12px;flex:1;background:transparent;color:var(--text);font-size:14px;">
+            </div>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Email *</label>
@@ -518,9 +569,30 @@
         </label>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:14px;">
+      <!-- Finder's additional contacts (shown if available) -->
+      <div id="claimFinderSocials" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.6px;">Finder's Additional Contacts</div>
+        <div id="claimFinderSocialsContent" style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text2);"></div>
+      </div>
+
+      <div id="claimFormBtns" style="display:flex;gap:10px;margin-top:14px;">
         <button onclick="closeClaimModalDirect()" style="flex:1;padding:12px;background:var(--surface2);color:var(--text2);border:none;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;">Cancel</button>
         <button onclick="submitClaimForm()" style="flex:2;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📨 Submit Claim</button>
+      </div>
+
+      <!-- SUCCESS: Channel picker -->
+      <div id="claimSuccessStep" style="display:none;">
+        <div style="text-align:center;padding:12px 0 8px;">
+          <div style="font-size:40px;margin-bottom:8px;">✅</div>
+          <div style="font-weight:800;font-size:16px;color:var(--text);margin-bottom:4px;">Claim Submitted!</div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Now choose how to notify the finder:</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="sendClaimVia('wa')" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📱 Contact via WhatsApp</button>
+          <button onclick="sendClaimVia('email')" style="width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📧 Contact via Email</button>
+          <button onclick="sendClaimVia('copy')" style="width:100%;padding:12px;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">📋 Copy Message</button>
+          <button onclick="closeClaimModalDirect()" style="width:100%;padding:10px;background:transparent;color:var(--text3);border:none;font-weight:600;font-size:13px;cursor:pointer;">Close</button>
+        </div>
       </div>
     </div>
   </div>

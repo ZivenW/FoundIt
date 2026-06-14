@@ -59,6 +59,27 @@ function compressImage(file) {
   });
 }
 
+// ===== PENDING CLAIMS BADGE =====
+async function updateClaimsBadge(user) {
+  const badge = document.getElementById('myReportsBadge');
+  if (!badge || !user) return;
+  try {
+    const rSnap = await getDocs(query(collection(db, "reports"), where("reporterUid", "==", user.uid)));
+    if (rSnap.empty) { badge.style.display = 'none'; return; }
+    let pendingCount = 0;
+    for (const rDoc of rSnap.docs) {
+      const cSnap = await getDocs(query(collection(db, "claims"), where("reportId", "==", rDoc.id), where("status", "==", "pending")));
+      pendingCount += cSnap.size;
+    }
+    if (pendingCount > 0) {
+      badge.textContent = pendingCount > 9 ? '9+' : pendingCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) { badge.style.display = 'none'; }
+}
+
 // ===== AUTH STATE LISTENER =====
 onAuthStateChanged(auth, (user) => {
   const authBtn      = document.getElementById("authNavBtn");
@@ -72,6 +93,7 @@ onAuthStateChanged(auth, (user) => {
     if (userName)     { userName.textContent = "👤 " + name; userName.style.display = "block"; }
     if (navMyReports) navMyReports.style.display = "block";
     if (mnavMyRep)    mnavMyRep.style.display    = "block";
+    updateClaimsBadge(user);
   } else {
     if (authBtn)      { authBtn.textContent = "Login"; authBtn.onclick = window.toggleAuthModal; }
     if (userName)     userName.style.display = "none";
@@ -103,7 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
         imageUrl:      d.imageUrl || null,
         description:   d.desc || "-",
         reporterName:  d.name  || "",
-        reporterPhone: d.phone || "",
+        reporterPhone:     d.phone || "",
+        reporterEmail:     d.reporterEmail || null,
+        reporterLine:      d.lineId || null,
+        reporterInstagram: d.instagram || null,
+        reporterTelegram:  d.telegram || null,
         reporterUid:   d.reporterUid || null,
         fromFirestore: true,
       });
@@ -124,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===== SUBMIT REPORT =====
 window.submitReport = async function () {
   if (!auth.currentUser) {
-    window.showToast("Login dulu untuk melaporkan barang! 🔐", "error");
+    window.showToast("Please login first to report an item! 🔐", "error");
     setTimeout(() => window.toggleAuthModal(), 600);
     return;
   }
@@ -133,9 +159,13 @@ window.submitReport = async function () {
   const location  = document.getElementById("rLocation").value;
   const desc      = document.getElementById("rDesc").value.trim();
   const name      = document.getElementById("rName").value.trim();
-  const phone     = document.getElementById("rPhone").value.trim();
-  const fileInput = document.getElementById("imgInput");
-  const file      = fileInput?.files[0] || null;
+  const rawPhone62 = document.getElementById("rPhone").value.trim().replace(/[^0-9]/g, "");
+  const phone      = rawPhone62 ? "62" + (rawPhone62.startsWith("62") ? rawPhone62.slice(2) : rawPhone62.startsWith("0") ? rawPhone62.slice(1) : rawPhone62) : "";
+  const fileInput  = document.getElementById("imgInput");
+  const file       = fileInput?.files[0] || null;
+  const lineId     = document.getElementById("rLine")?.value.trim() || null;
+  const instagram  = document.getElementById("rInstagram")?.value.trim() || null;
+  const telegram   = document.getElementById("rTelegram")?.value.trim() || null;
 
   if (!item || !category || !location || !name || !phone) {
     window.showToast("Please fill in all required fields!", "error");
@@ -150,8 +180,10 @@ window.submitReport = async function () {
 
     await addDoc(collection(db, "reports"), {
       item, category, location, desc, name, phone, imageUrl,
-      reporterUid: auth.currentUser?.uid || null,
-      status:      "lost",
+      reporterUid:   auth.currentUser?.uid || null,
+      reporterEmail: auth.currentUser?.email || null,
+      lineId, instagram, telegram,
+      status:        "lost",
       createdAt:   new Date()
     });
 
@@ -161,6 +193,10 @@ window.submitReport = async function () {
       if (el) el.value = "";
     });
     if (fileInput) fileInput.value = "";
+    ["rLine","rInstagram","rTelegram"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
     const preview = document.getElementById("imgPreview");
     if (preview) { preview.src = ""; preview.style.display = "none"; }
 
@@ -173,12 +209,20 @@ window.submitReport = async function () {
 // ===== SUBMIT CLAIM =====
 window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, reporterName, itemName) {
   const claimerName  = document.getElementById("claimName").value.trim();
-  const claimerWA    = document.getElementById("claimWA").value.trim();
+  const rawClaimWA   = document.getElementById("claimWA").value.trim().replace(/[^0-9]/g, "");
+  const claimerWA    = rawClaimWA ? "62" + (rawClaimWA.startsWith("62") ? rawClaimWA.slice(2) : rawClaimWA.startsWith("0") ? rawClaimWA.slice(1) : rawClaimWA) : "";
   const claimerEmail = document.getElementById("claimEmail").value.trim();
   const claimerProof = document.getElementById("claimProof").value.trim();
 
   if (!claimerName || !claimerWA || !claimerEmail || !claimerProof) {
     window.showToast("Please fill in all claim fields!", "error");
+    return;
+  }
+
+  // Prevent self-claiming
+  const currentItem = window._currentModalItem;
+  if (currentItem?.reporterUid && auth.currentUser?.uid === currentItem.reporterUid) {
+    window.showToast("You cannot claim your own report! 🚫", "error");
     return;
   }
 
@@ -199,14 +243,29 @@ window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, repo
     // WA notification ke finder
     const rawPhone = (reporterPhone || "").replace(/\D/g, "");
     const waPhone  = rawPhone.startsWith("0") ? "62" + rawPhone.slice(1) : rawPhone;
-    const waMsg    = `Hi ${reporterName}, someone has claimed the item "${itemName}" that you reported on FindIt BINUS!\n\nName: ${claimerName}\nWhatsApp: ${claimerWA}\nEmail: ${claimerEmail}\nProof: ${claimerProof}\n\nPlease login to FindIt to verify this claim.`;
-    const waUrl    = "https://wa.me/" + waPhone + "?text=" + encodeURIComponent(waMsg);
+    const claimerMajor = document.getElementById("claimMajor")?.value || "";
+    const claimMsg = "Hi " + reporterName + "!\n\n" +
+      "My name is " + claimerName + (claimerMajor ? " (" + claimerMajor + " - BINUS Medan)" : "") + ".\n" +
+      "I think you found my " + itemName + "!\n\n" +
+      "Proof of Ownership:\n\"" + claimerProof + "\"\n\n" +
+      "You can reach me at:\n" +
+      "WhatsApp: " + claimerWA + "\n" +
+      "Email: " + claimerEmail + "\n\n" +
+      "Thank you so much! I hope we can arrange the return.";
+    const waUrl    = "https://wa.me/" + waPhone + "?text=" + encodeURIComponent(claimMsg);
+    const emailUrl = "mailto:" + (reporterPhone.includes("@") ? reporterPhone : "") + 
+                     "?subject=" + encodeURIComponent("Claim for: " + itemName + " | FoundIt BINUS") +
+                     "&body=" + encodeURIComponent(claimMsg);
 
-    window.showToast("Claim submitted! The finder will contact you ✅", "success");
-    window.closeClaimModalDirect();
+    // Store contact data for channel picker
+    window._claimContactData = { waUrl, emailUrl: emailUrl || null, message: claimMsg };
 
-    // Buka WA ke finder
-    setTimeout(() => window.open(waUrl, "_blank"), 800);
+    // Show channel picker instead of auto-opening WA
+    const formBtns    = document.getElementById("claimFormBtns");
+    const successStep = document.getElementById("claimSuccessStep");
+    if (formBtns)    formBtns.style.display    = "none";
+    if (successStep) successStep.style.display = "block";
+    window.showToast("Claim submitted! ✅", "success");
 
   } catch (error) {
     console.error("Claim error:", error);
@@ -270,13 +329,16 @@ window.loadMyReports = async function() {
         ? '<div style="color:var(--text3);font-size:13px;padding:10px 0;">No claims yet.</div>'
         : claims.map(c => `
           <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;border-left:3px solid ${c.status === 'accepted' ? 'var(--green)' : 'var(--primary)'};">
-            <div style="font-weight:700;font-size:14px;color:var(--text);">${c.claimerName} ${c.status === 'accepted' ? '<span style="color:var(--green);font-size:12px;">✅ Diterima</span>' : '<span style="color:var(--primary);font-size:12px;">⏳ Pending</span>'}</div>
+            <div style="font-weight:700;font-size:14px;color:var(--text);">${c.claimerName} ${c.status === 'accepted' ? '<span style="color:var(--green);font-size:12px;">✅ Accepted</span>' : '<span style="color:var(--primary);font-size:12px;">⏳ Pending</span>'}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:4px;">📱 ${c.claimerWA} &nbsp;|&nbsp; 📧 ${c.claimerEmail}</div>
             <div style="font-size:13px;color:var(--text2);margin-top:8px;font-style:italic;">"${c.claimerProof}"</div>
             ${c.status !== 'accepted' ? `
             <div style="display:flex;gap:8px;margin-top:12px;">
-              <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="flex:1;padding:8px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">✅ Verify & Mark as Claimed</button>
-              <a href="https://wa.me/${c.claimerWA.replace(/\D/g,'')}?text=${encodeURIComponent('Halo '+c.claimerName+', kami confirm that the item '+r.item+' belongs to you. Please contact us to arrange pickup!')}" target="_blank" style="flex:1;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;text-align:center;">📱 Chat on WhatsApp</a>
+              <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="width:100%;padding:9px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:6px;">✅ Verify & Mark as Claimed</button>
+              <div style="display:flex;gap:6px;">
+                <a href="https://wa.me/${(r2=>(r2.startsWith('0')?'62'+r2.slice(1):r2))(c.claimerWA.replace(/\D/g,''))}?text=${encodeURIComponent('Hi '+c.claimerName+', I can confirm that the item '+r.item+' is yours. Please contact me to arrange pickup!')}" target="_blank" style="flex:1;padding:8px;background:#25D366;color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📱 WhatsApp</a>
+                <a href="mailto:${c.claimerEmail}?subject=${encodeURIComponent('Re: Claim for '+r.item+' | FoundIt BINUS')}&body=${encodeURIComponent('Hi '+c.claimerName+',\n\nI can confirm the item '+r.item+' belongs to you. Please contact me to arrange the return.\n\nBest,\n'+r.name)}" style="flex:1;padding:8px;background:var(--primary);color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📧 Email</a>
+              </div>
             </div>` : ''}
           </div>`).join('');
 
@@ -354,11 +416,13 @@ window.doLogin = async function() {
 window.doRegister = async function() {
   const name     = document.getElementById("regName").value.trim();
   const email    = document.getElementById("regEmail").value.trim();
-  const phone    = document.getElementById("regPhone").value.trim();
+  const rawRegPhone = document.getElementById("regPhone").value.trim().replace(/[^0-9]/g, "");
+  const phone       = rawRegPhone ? "62" + (rawRegPhone.startsWith("62") ? rawRegPhone.slice(2) : rawRegPhone.startsWith("0") ? rawRegPhone.slice(1) : rawRegPhone) : "";
   const password = document.getElementById("regPassword").value;
   const errEl    = document.getElementById("authError");
   errEl.style.display = "none";
 
+  const passwordConfirm = document.getElementById("regPasswordConfirm")?.value || "";
   if (!name || !email || !phone || !password) {
     errEl.textContent = "Please fill in all fields.";
     errEl.style.display = "block";
@@ -366,6 +430,11 @@ window.doRegister = async function() {
   }
   if (password.length < 6) {
     errEl.textContent = "Password must be at least 6 characters.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (password !== passwordConfirm) {
+    errEl.textContent = "Passwords do not match.";
     errEl.style.display = "block";
     return;
   }

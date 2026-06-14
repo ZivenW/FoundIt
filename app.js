@@ -220,13 +220,14 @@ function quickChip(el, type) {
 function sortItems() {
   const val = document.getElementById('sortSelect').value;
   searchFilteredItems.sort((a, b) => {
-    if (val === 'newest')   return String(b.id).localeCompare(String(a.id));
-    if (val === 'oldest')   return String(a.id).localeCompare(String(b.id));
+    if (val === 'newest')   return new Date(b.date) - new Date(a.date) || String(b.id).localeCompare(String(a.id));
+    if (val === 'oldest')   return new Date(a.date) - new Date(b.date) || String(a.id).localeCompare(String(b.id));
     if (val === 'name')     return (a.name || '').localeCompare(b.name || '');
     if (val === 'category') return (a.category || '').localeCompare(b.category || '');
     return 0;
   });
-  cards.forEach(c => grid.appendChild(c));
+  searchCurrentPage = 1;
+  renderSearchPage();
 }
 
 // ===== MODAL =====
@@ -237,7 +238,7 @@ function openModal(id) {
   const isLost = item.status.toLowerCase() === 'lost';
   document.getElementById('modalTitle').textContent  = item.name;
   if (item.imageUrl) {
-    document.getElementById('modalThumb').innerHTML = `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+    document.getElementById('modalThumb').innerHTML = `<img src="${item.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;cursor:pointer;" onclick="openLightbox('${item.imageUrl}')" title="Click to view full size">`;
   } else {
     document.getElementById('modalThumb').textContent = item.emoji;
   }
@@ -249,10 +250,46 @@ function openModal(id) {
   document.getElementById('modalTime').textContent   = item.time;
   document.getElementById('modalDesc').textContent   = item.description;
   // Format nomor: hilangkan karakter non-digit, ganti awalan 0 dengan 62
-  const rawPhone = (item.reporterPhone || '628123456789').replace(/\D/g, '');
-  const waPhone  = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone;
-  const waMsg    = 'Halo, saya kehilangan ' + item.name + '. Saya melihat laporan Anda di FindIt BINUS dan sepertinya itu milik saya. Boleh saya mengambilnya?';
-  document.getElementById('modalWa').href = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(waMsg);
+  // WhatsApp contact
+  const rawPhone   = (item.reporterPhone || '').replace(/\D/g, '');
+  const waPhone    = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone;
+  const contactMsg = 'Hi, I lost my ' + item.name + '. I saw your report on FoundIt BINUS and I believe it might be mine. Could we arrange the return?';
+  const waEl = document.getElementById('modalWa');
+  if (waEl) waEl.href = waPhone ? 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(contactMsg) : '#';
+
+  // Email contact
+  const emailEl = document.getElementById('modalEmail');
+  if (emailEl) {
+    const toEmail = item.reporterEmail || '';
+    emailEl.href  = 'mailto:' + toEmail + '?subject=' + encodeURIComponent('Claim for: ' + item.name + ' | FoundIt BINUS') + '&body=' + encodeURIComponent(contactMsg);
+  }
+
+  // If current user is the reporter, hide contact buttons (can't contact yourself)
+  const isOwnReport = item.reporterUid && window._currentUser?.uid === item.reporterUid;
+  const contactSection = document.querySelector('.modal-actions > div:first-of-type');
+  const waEl2  = document.getElementById('modalWa');
+  const emlEl2 = document.getElementById('modalEmail');
+  const copyBtn = document.querySelector('.modal-actions button[onclick="copyFinderContact()"]');
+
+  [waEl2, emlEl2, copyBtn].forEach(el => {
+    if (!el) return;
+    el.style.display = isOwnReport ? 'none' : '';
+  });
+
+  // Show "This is your report" notice if own
+  let ownNotice = document.getElementById('ownReportNotice');
+  if (!ownNotice) {
+    ownNotice = document.createElement('div');
+    ownNotice.id = 'ownReportNotice';
+    ownNotice.style.cssText = 'background:var(--primary-light);color:var(--primary);padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:center;';
+    ownNotice.textContent = '📋 This is your report. You can manage it in My Reports.';
+    document.querySelector('.modal-actions')?.before(ownNotice);
+  }
+  ownNotice.style.display = isOwnReport ? 'block' : 'none';
+
+  const claimBtn = document.querySelector('.modal-actions .btn-claim');
+  if (claimBtn) claimBtn.style.display = isOwnReport ? 'none' : '';
+
   document.getElementById('itemModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -275,9 +312,39 @@ function claimItem() {
 function previewImg(input) {
   const file = input.files[0];
   if (!file) return;
-  const preview = document.getElementById('imgPreview');
-  preview.src   = URL.createObjectURL(file);
+  const preview  = document.getElementById('imgPreview');
+  const removeBtn = document.getElementById('removePhotoBtn');
+  const zone     = preview.closest('.upload-zone');
+  preview.src    = URL.createObjectURL(file);
   preview.style.display = 'block';
+  if (removeBtn) removeBtn.style.display = 'flex';
+  if (zone) zone.querySelectorAll('.upload-ico, p').forEach(el => el.style.display = 'none');
+}
+
+function removePhoto(e) {
+  e.stopPropagation();
+  const preview   = document.getElementById('imgPreview');
+  const removeBtn = document.getElementById('removePhotoBtn');
+  const fileInput = document.getElementById('imgInput');
+  const zone      = preview?.closest('.upload-zone');
+  if (preview)   { preview.src = ''; preview.style.display = 'none'; }
+  if (removeBtn) removeBtn.style.display = 'none';
+  if (fileInput) fileInput.value = '';
+  if (zone) zone.querySelectorAll('.upload-ico, p').forEach(el => el.style.display = '');
+}
+
+function cancelReport() {
+  if (!confirm('Clear all fields and cancel this report?')) return;
+  ['rName','rPhone','rItem','rDesc','rLine','rInstagram','rTelegram'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const rCat = document.getElementById('rCategory');
+  const rLoc = document.getElementById('rLocation');
+  if (rCat) rCat.selectedIndex = 0;
+  if (rLoc) rLoc.selectedIndex = 0;
+  removePhoto({ stopPropagation: () => {} });
+  showToast('Report cancelled.', '');
 }
 
 // submitReport is defined in firebase.js as window.submitReport
@@ -521,8 +588,15 @@ function openClaimForm() {
     setTimeout(() => toggleAuthModal(), 600);
     return;
   }
+
   const item = window._currentModalItem;
   if (!item) return;
+
+  // Prevent finder from claiming their own report
+  if (item.reporterUid && window._currentUser.uid === item.reporterUid) {
+    showToast("You cannot claim an item that you reported! 🚫", "error");
+    return;
+  }
 
   _claimTarget = item;
   const modal   = document.getElementById("claimModal");
@@ -545,6 +619,24 @@ function openClaimForm() {
   const tnc = document.getElementById("claimTnC");
   if (tnc) tnc.checked = false;
 
+  // Show finder's social contacts as note in claim form
+  const socialsBox     = document.getElementById('claimFinderSocials');
+  const socialsContent = document.getElementById('claimFinderSocialsContent');
+  if (socialsBox && socialsContent && item) {
+    const lines = [];
+    if (item.reporterLine)      lines.push('💬 Line: ' + item.reporterLine);
+    if (item.reporterInstagram) lines.push('📸 Instagram: ' + item.reporterInstagram);
+    if (item.reporterTelegram)  lines.push('✈️ Telegram: ' + item.reporterTelegram);
+    if (lines.length > 0) {
+      socialsContent.innerHTML = lines.map(l => '<div>' + l + '</div>').join('');
+      socialsBox.style.display = 'block';
+    } else {
+      socialsBox.style.display = 'none';
+    }
+  }
+
+  if (document.getElementById('claimFormBtns'))    document.getElementById('claimFormBtns').style.display    = 'flex';
+  if (document.getElementById('claimSuccessStep')) document.getElementById('claimSuccessStep').style.display = 'none';
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -576,6 +668,76 @@ function submitClaimForm() {
   );
 }
 
+// ===== TOGGLE PASSWORD VISIBILITY =====
+const EYE_OPEN   = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_CLOSED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function togglePass(inputId, btnId) {
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (btn) btn.innerHTML = EYE_CLOSED;
+  } else {
+    inp.type = 'password';
+    if (btn) btn.innerHTML = EYE_OPEN;
+  }
+}
+window.togglePass = togglePass;
+
+// ===== LIGHTBOX =====
+function openLightbox(src) {
+  let lb = document.getElementById('lightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'lightbox';
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:auto;';
+    document.body.appendChild(lb);
+  }
+
+  let zoomed = false;
+  lb.innerHTML = `
+    <button onclick="document.getElementById('lightbox').style.display='none'" style="position:fixed;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;font-size:22px;cursor:pointer;z-index:10000;display:flex;align-items:center;justify-content:center;">✕</button>
+    <img id="lbImg" src="${src}" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:10px;box-shadow:0 0 40px rgba(0,0,0,.8);cursor:zoom-in;transition:transform .2s;" title="Click to zoom">`;
+
+  const img = lb.querySelector('#lbImg');
+  img.onclick = (e) => {
+    e.stopPropagation();
+    zoomed = !zoomed;
+    img.style.maxWidth  = zoomed ? 'none' : '92vw';
+    img.style.maxHeight = zoomed ? 'none' : '92vh';
+    img.style.cursor    = zoomed ? 'zoom-out' : 'zoom-in';
+    img.style.transform = zoomed ? 'scale(1.8)' : 'scale(1)';
+  };
+  lb.onclick = (e) => { if (e.target === lb) lb.style.display = 'none'; };
+  lb.style.display = 'flex';
+}
+window.openLightbox  = openLightbox;
+window.removePhoto   = removePhoto;
+window.cancelReport  = cancelReport;
+
+// ===== COPY FINDER CONTACT =====
+function copyFinderContact() {
+  const item = window._currentModalItem;
+  if (!item) return;
+  const parts = ['FoundIt BINUS - Found Item', 'Item: ' + item.name, 'Location: ' + item.location, 'Finder: ' + item.reporterName, 'WhatsApp: ' + item.reporterPhone];
+  if (item.reporterEmail)     parts.push('Email: ' + item.reporterEmail);
+  if (item.reporterLine)      parts.push('Line: ' + item.reporterLine);
+  if (item.reporterInstagram) parts.push('Instagram: ' + item.reporterInstagram);
+  if (item.reporterTelegram)  parts.push('Telegram: ' + item.reporterTelegram);
+  navigator.clipboard.writeText(parts.join('\n')).then(() => showToast('Contact info copied!', 'success')).catch(() => showToast('Copy failed', 'error'));
+}
+
+// ===== SEND CLAIM VIA CHANNEL =====
+function sendClaimVia(channel) {
+  const data = window._claimContactData;
+  if (!data) return;
+  if (channel === 'wa') window.open(data.waUrl, '_blank');
+  else if (channel === 'email' && data.emailUrl) window.open(data.emailUrl);
+  else if (channel === 'copy') navigator.clipboard.writeText(data.message).then(() => showToast('Message copied!', 'success'));
+}
+
 // ===== EXPOSE FUNCTIONS TO WINDOW (needed by firebase.js module) =====
 window.renderGrid        = renderGrid;
 window.initStats         = initStats;
@@ -587,6 +749,8 @@ window.renderSearchPage  = renderSearchPage;
 window.animateStatsCharts = animateStatsCharts;
 window.showToast         = showToast;
 window.openModal         = openModal;
+window.copyFinderContact = copyFinderContact;
+window.sendClaimVia      = sendClaimVia;
 window.toggleAuthModal   = toggleAuthModal;
 window.closeAuthModal    = closeAuthModal;
 window.closeAuthModalDirect = closeAuthModalDirect;
