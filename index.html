@@ -188,7 +188,7 @@
         </div>
         <select class="sort-select" id="sortSelect" onchange="sortItems()">
           <option value="newest">Newest</option>
-          <option value="oldest">Terlama</option>
+          <option value="oldest">Oldest</option>
           <option value="name">Name A-Z</option>
           <option value="category">Category</option>
         </select>
@@ -412,7 +412,7 @@
         <div class="meta-item"><div class="meta-lbl">⏱️ Waktu</div><div class="meta-val" id="modalTime"></div></div>
       </div>
       <div class="modal-desc" id="modalDesc"></div>
-      <div class="modal-actions" style="flex-direction:column;gap:10px;">
+      <div class="modal-actions" style="flex-direction:column;gap:10px;" id="modalContactSection">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:2px;">Contact Finder</div>
         <div style="display:flex;gap:8px;">
           <a id="modalWa" href="#" target="_blank" style="flex:1;padding:10px;background:#25D366;color:#fff;border-radius:10px;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
@@ -434,13 +434,23 @@
 
 <!-- ===================== MY REPORTS PAGE ===================== -->
 <div id="page-myreports" class="page">
-  <div class="report-page" style="max-width:900px;margin:0 auto;padding:24px 16px;">
-    <div class="sec-head" style="margin-bottom:20px;">
+  <div style="max-width:900px;margin:0 auto;padding:28px 20px;">
+
+    <!-- Header row with filter -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
       <div>
         <div class="sec-title">📦 My Reports</div>
         <div class="sec-sub">Items you've reported and their claim requests</div>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="myReportsSort" onchange="sortMyReports()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="claims">Most Claims</option>
+        </select>
+      </div>
     </div>
+
     <div id="myReportsList" style="display:flex;flex-direction:column;gap:16px;">
       <div style="text-align:center;padding:40px;color:var(--text3);">Loading your reports...</div>
     </div>
@@ -467,7 +477,7 @@
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
           <div style="position:relative;display:flex;align-items:center;">
             <input class="rfield" id="loginPassword" type="password" placeholder="Password" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
-            <button type="button" onclick="togglePass('loginPassword','eyeLogin')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeLogin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button type="button" onclick="togglePass('loginPassword','eyeLogin')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeLogin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
           </div>
         </div>
         <button onclick="doLogin()" style="width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Login</button>
@@ -509,14 +519,14 @@
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Password</label>
           <div style="position:relative;display:flex;align-items:center;">
             <input class="rfield" id="regPassword" type="password" placeholder="Min. 6 characters" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
-            <button type="button" onclick="togglePass('regPassword','eyeReg')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeReg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button type="button" onclick="togglePass('regPassword','eyeReg')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeReg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
           </div>
         </div>
         <div style="margin-bottom:20px;">
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">Confirm Password</label>
           <div style="position:relative;display:flex;align-items:center;">
             <input class="rfield" id="regPasswordConfirm" type="password" placeholder="Re-enter password" style="margin:0;width:100%;box-sizing:border-box;padding-right:42px;">
-            <button type="button" onclick="togglePass('regPasswordConfirm','eyeRegConfirm')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeRegConfirm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button type="button" onclick="togglePass('regPasswordConfirm','eyeRegConfirm')" style="position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:18px;" id="eyeRegConfirm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
           </div>
         </div>
         <button onclick="doRegister()" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">Sign Up Now</button>

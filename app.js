@@ -264,31 +264,26 @@ function openModal(id) {
     emailEl.href  = 'mailto:' + toEmail + '?subject=' + encodeURIComponent('Claim for: ' + item.name + ' | FoundIt BINUS') + '&body=' + encodeURIComponent(contactMsg);
   }
 
-  // If current user is the reporter, hide contact buttons (can't contact yourself)
+  // If current user is the reporter, hide contact section
   const isOwnReport = item.reporterUid && window._currentUser?.uid === item.reporterUid;
-  const contactSection = document.querySelector('.modal-actions > div:first-of-type');
-  const waEl2  = document.getElementById('modalWa');
-  const emlEl2 = document.getElementById('modalEmail');
-  const copyBtn = document.querySelector('.modal-actions button[onclick="copyFinderContact()"]');
+  const contactSection = document.getElementById('modalContactSection');
+  if (contactSection) contactSection.style.display = isOwnReport ? 'none' : '';
 
-  [waEl2, emlEl2, copyBtn].forEach(el => {
-    if (!el) return;
-    el.style.display = isOwnReport ? 'none' : '';
-  });
+  // Also hide "CONTACT FINDER" label
+  const contactLabel = document.querySelector('.modal-body [style*="text-transform:uppercase"]');
+  if (contactLabel) contactLabel.style.display = isOwnReport ? 'none' : '';
 
-  // Show "This is your report" notice if own
+  // Show/hide own report notice
   let ownNotice = document.getElementById('ownReportNotice');
   if (!ownNotice) {
     ownNotice = document.createElement('div');
     ownNotice.id = 'ownReportNotice';
-    ownNotice.style.cssText = 'background:var(--primary-light);color:var(--primary);padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:center;';
+    ownNotice.style.cssText = 'background:var(--primary-light);color:var(--primary);padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:center;margin-bottom:8px;';
     ownNotice.textContent = '📋 This is your report. You can manage it in My Reports.';
-    document.querySelector('.modal-actions')?.before(ownNotice);
+    const modalBody = document.querySelector('.modal-body');
+    if (modalBody) modalBody.appendChild(ownNotice);
   }
   ownNotice.style.display = isOwnReport ? 'block' : 'none';
-
-  const claimBtn = document.querySelector('.modal-actions .btn-claim');
-  if (claimBtn) claimBtn.style.display = isOwnReport ? 'none' : '';
 
   document.getElementById('itemModal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -539,6 +534,14 @@ function toggleAuthModal() {
   if (modal.classList.contains("open")) {
     closeAuthModalDirect();
   } else {
+    // Clear all auth form fields before opening
+    ["loginEmail","loginPassword","regName","regEmail","regPhone",
+     "regPassword","regPasswordConfirm","forgotEmail"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    // Reset to login tab
+    switchAuthTab("login");
     modal.classList.add("open");
     document.body.style.overflow = "hidden";
   }
@@ -668,6 +671,12 @@ function submitClaimForm() {
   );
 }
 
+// ===== SORT MY REPORTS =====
+function sortMyReports() {
+  if (typeof window.loadMyReports === 'function') window.loadMyReports();
+}
+window.sortMyReports = sortMyReports;
+
 // ===== TOGGLE PASSWORD VISIBILITY =====
 const EYE_OPEN   = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_CLOSED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
@@ -678,10 +687,10 @@ function togglePass(inputId, btnId) {
   if (!inp) return;
   if (inp.type === 'password') {
     inp.type = 'text';
-    if (btn) btn.innerHTML = EYE_CLOSED;
+    if (btn) btn.innerHTML = EYE_CLOSED; // password now visible → show crossed (click to hide)
   } else {
     inp.type = 'password';
-    if (btn) btn.innerHTML = EYE_OPEN;
+    if (btn) btn.innerHTML = EYE_OPEN;   // password now hidden → show open (click to reveal)
   }
 }
 window.togglePass = togglePass;

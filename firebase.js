@@ -94,11 +94,20 @@ onAuthStateChanged(auth, (user) => {
     if (navMyReports) navMyReports.style.display = "block";
     if (mnavMyRep)    mnavMyRep.style.display    = "block";
     updateClaimsBadge(user);
+    // Auto-refresh My Reports if currently viewing that page
+    if (document.getElementById("page-myreports")?.classList.contains("active")) {
+      window.loadMyReports();
+    }
   } else {
     if (authBtn)      { authBtn.textContent = "Login"; authBtn.onclick = window.toggleAuthModal; }
     if (userName)     userName.style.display = "none";
     if (navMyReports) navMyReports.style.display = "none";
     if (mnavMyRep)    mnavMyRep.style.display    = "none";
+    // Clear My Reports and badge on logout
+    const badge = document.getElementById("myReportsBadge");
+    if (badge) badge.style.display = "none";
+    const list = document.getElementById("myReportsList");
+    if (list) list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Login to view your reports.</div>';
   }
   window._currentUser = user;
 });
@@ -276,14 +285,14 @@ window.doSubmitClaim = async function(reportId, firestoreId, reporterPhone, repo
 // ===== LOAD MY REPORTS =====
 window.loadMyReports = async function() {
   const user = auth.currentUser;
+  const container = document.getElementById("myReportsList");
+
   if (!user) {
-    document.getElementById("myReportsList").innerHTML =
-      '<div style="text-align:center;padding:40px;color:var(--text3);">Login dulu untuk melihat laporan kamu.</div>';
+    if (container) container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Please login to view your reports.</div>';
     return;
   }
 
-  const container = document.getElementById("myReportsList");
-  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Loading...</div>';
+  if (container) container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Loading...</div>';
 
   try {
     // Get my reports
@@ -291,11 +300,14 @@ window.loadMyReports = async function() {
     const rQuery = query(collection(db, "reports"), where("reporterUid", "==", user.uid));
     const rSnap  = await getDocs(rQuery);
 
-    // Sort client-side by createdAt desc
+    // Sort client-side based on dropdown
+    const sortVal = document.getElementById("myReportsSort")?.value || "newest";
     const sortedDocs = [...rSnap.docs].sort((a, b) => {
       const ta = a.data().createdAt?.toDate?.() || new Date(0);
       const tb = b.data().createdAt?.toDate?.() || new Date(0);
-      return tb - ta;
+      if (sortVal === "oldest") return ta - tb;
+      if (sortVal === "claims") return (claimsMap[b.id]?.length || 0) - (claimsMap[a.id]?.length || 0);
+      return tb - ta; // newest
     });
 
     if (rSnap.empty) {
@@ -321,41 +333,58 @@ window.loadMyReports = async function() {
 
     // Render
     container.innerHTML = sortedDocs.map(docSnap => {
-      const r      = docSnap.data();
-      const claims = claimsMap[docSnap.id] || [];
-      const emoji  = EMOJI_MAP[r.category] || "📦";
-      const status = r.status === "lost" ? "🔴 Unclaimed" : "✅ Claimed";
+      const r         = docSnap.data();
+      const claims    = claimsMap[docSnap.id] || [];
+      const emoji     = EMOJI_MAP[r.category] || "📦";
+      const isClaimed = r.status !== "lost";
+      const reportDate = r.createdAt?.toDate
+        ? r.createdAt.toDate().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})
+        : "-";
+
       const claimsHtml = claims.length === 0
         ? '<div style="color:var(--text3);font-size:13px;padding:10px 0;">No claims yet.</div>'
-        : claims.map(c => `
-          <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;border-left:3px solid ${c.status === 'accepted' ? 'var(--green)' : 'var(--primary)'};">
-            <div style="font-weight:700;font-size:14px;color:var(--text);">${c.claimerName} ${c.status === 'accepted' ? '<span style="color:var(--green);font-size:12px;">✅ Accepted</span>' : '<span style="color:var(--primary);font-size:12px;">⏳ Pending</span>'}</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:4px;">📱 ${c.claimerWA} &nbsp;|&nbsp; 📧 ${c.claimerEmail}</div>
-            <div style="font-size:13px;color:var(--text2);margin-top:8px;font-style:italic;">"${c.claimerProof}"</div>
-            ${c.status !== 'accepted' ? `
-            <div style="display:flex;gap:8px;margin-top:12px;">
-              <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="width:100%;padding:9px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:6px;">✅ Verify & Mark as Claimed</button>
-              <div style="display:flex;gap:6px;">
-                <a href="https://wa.me/${(r2=>(r2.startsWith('0')?'62'+r2.slice(1):r2))(c.claimerWA.replace(/\D/g,''))}?text=${encodeURIComponent('Hi '+c.claimerName+', I can confirm that the item '+r.item+' is yours. Please contact me to arrange pickup!')}" target="_blank" style="flex:1;padding:8px;background:#25D366;color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📱 WhatsApp</a>
-                <a href="mailto:${c.claimerEmail}?subject=${encodeURIComponent('Re: Claim for '+r.item+' | FoundIt BINUS')}&body=${encodeURIComponent('Hi '+c.claimerName+',\n\nI can confirm the item '+r.item+' belongs to you. Please contact me to arrange the return.\n\nBest,\n'+r.name)}" style="flex:1;padding:8px;background:var(--primary);color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📧 Email</a>
+        : claims.map(c => {
+            const claimDate = c.createdAt?.toDate
+              ? c.createdAt.toDate().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) + " · " +
+                c.createdAt.toDate().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})
+              : "-";
+            const waNum = (c.claimerWA||"").replace(/\D/g,"");
+            const waFmt = waNum.startsWith("0") ? "62"+waNum.slice(1) : (waNum.startsWith("62") ? waNum : "62"+waNum);
+            return `<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;border-left:3px solid ${c.status==="accepted"?"var(--green)":"var(--primary)}"};">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                <div style="font-weight:700;font-size:14px;color:var(--text);">${c.claimerName} ${c.status==="accepted"?'<span style="color:var(--green);font-size:11px;font-weight:600;">✅ Accepted</span>':'<span style="color:var(--primary);font-size:11px;font-weight:600;">⏳ Pending</span>'}</div>
+                <div style="font-size:11px;color:var(--text3);white-space:nowrap;">🕐 ${claimDate}</div>
               </div>
-            </div>` : ''}
-          </div>`).join('');
+              <div style="font-size:12px;color:var(--text3);margin-top:4px;">${c.claimerMajor?c.claimerMajor+" · ":""}📱 ${c.claimerWA} · 📧 ${c.claimerEmail}</div>
+              <div style="font-size:13px;color:var(--text2);margin-top:6px;font-style:italic;">"${c.claimerProof}"</div>
+              ${c.status!=="accepted"?`<div style="margin-top:10px;">
+                <button onclick="window.acceptClaim('${c.id}','${docSnap.id}','${c.claimerWA}','${c.claimerName}')" style="width:100%;padding:8px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:6px;">✅ Verify & Mark as Claimed</button>
+                <div style="display:flex;gap:6px;">
+                  <a href="https://wa.me/${waFmt}?text=${encodeURIComponent("Hi "+c.claimerName+", I confirm "+r.item+" is yours. Contact me to arrange pickup!")}" target="_blank" style="flex:1;padding:8px;background:#25D366;color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📱 WhatsApp</a>
+                  <a href="mailto:${c.claimerEmail}?subject=${encodeURIComponent("Re: "+r.item+" | FoundIt BINUS")}&body=${encodeURIComponent("Hi "+c.claimerName+",\n\nI confirm "+r.item+" is yours. Please contact me.\n\n"+r.name)}" style="flex:1;padding:8px;background:var(--primary);color:#fff;border-radius:8px;font-weight:600;font-size:12px;text-decoration:none;text-align:center;">📧 Email</a>
+                </div>
+              </div>`:""}
+            </div>`;
+          }).join("");
 
-      return `
-        <div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:16px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-            <div style="width:48px;height:48px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${emoji}</div>
+      return `<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <div style="width:46px;height:46px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${emoji}</div>
             <div style="flex:1;">
               <div style="font-weight:700;font-size:15px;color:var(--text);">${r.item}</div>
-              <div style="font-size:12px;color:var(--text3);">📍 ${r.location} &nbsp;|&nbsp; ${status}</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px;">📍 ${r.location}</div>
             </div>
-            ${r.status === 'lost' ? '' : '<span style="background:#D1FAE5;color:#065F46;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Claimed</span>'}
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="background:${isClaimed?"#D1FAE5":"#FEE2E2"};color:${isClaimed?"#065F46":"#991B1B"};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">${isClaimed?"✅ Claimed":"🔴 Unclaimed"}</span>
+              <span style="font-size:11px;color:var(--text3);">📅 ${reportDate}</span>
+            </div>
           </div>
-          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;">📥 Claims Received (${claims.length})</div>
-          ${claimsHtml}
+          <div style="border-top:1px solid var(--border);padding-top:10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;">📥 Claims Received (${claims.length})</div>
+            ${claimsHtml}
+          </div>
         </div>`;
-    }).join('');
+    }).join("");
 
   } catch (error) {
     console.error(error);
